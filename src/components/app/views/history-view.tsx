@@ -149,6 +149,59 @@ const exportJobsAsCsv = (jobs: JobDto[]) => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
+/** Export starred jobs as a human-readable bundled text file. */
+const exportStarredBundle = (jobs: JobDto[]) => {
+  const starred = jobs.filter((j) => j.starred);
+  if (starred.length === 0) return;
+  const lines: string[] = [
+    "BhashaSetu — Starred Translations Bundle",
+    `Generated: ${new Date().toISOString()}`,
+    `Total entries: ${starred.length}`,
+    "=".repeat(60),
+    "",
+  ];
+  starred.forEach((job, i) => {
+    lines.push(`[${i + 1}/${starred.length}] ${KIND_LABEL[job.kind] ?? job.kind} · ${job.sourceLang} → ${job.targetLang}`);
+    if (job.inputName) lines.push(`File: ${job.inputName}`);
+    lines.push(`Created: ${new Date(job.createdAt).toLocaleString()}`);
+    if (job.model) lines.push(`Model: ${job.model}`);
+    if (job.rating) lines.push(`Rating: ${job.rating === "up" ? "👍 Good" : "👎 Needs work"}`);
+    lines.push("-".repeat(40));
+    if (job.inputText) {
+      lines.push("SOURCE:");
+      lines.push(job.inputText);
+      lines.push("");
+    }
+    if (job.transcript && job.transcript !== job.inputText) {
+      lines.push("TRANSCRIPT:");
+      lines.push(job.transcript);
+      lines.push("");
+    }
+    if (job.outputText) {
+      lines.push("TRANSLATION:");
+      lines.push(job.outputText);
+      lines.push("");
+    }
+    if (job.summary) {
+      lines.push("SUMMARY:");
+      lines.push(job.summary);
+      lines.push("");
+    }
+    lines.push("=".repeat(60));
+    lines.push("");
+  });
+  const content = lines.join("\n");
+  const blob = new Blob(["\uFEFF" + content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `bhashasetu-starred-${new Date().toISOString().slice(0, 10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
 const downloadText = (filename: string, content: string) => {
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -774,6 +827,23 @@ export function HistoryView() {
         subtitle="Every translation, transcription and conversion — searchable, re-downloadable, deletable."
         actions={
           <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                const starredCount = jobs.filter((j) => j.starred).length;
+                if (starredCount === 0) {
+                  toast.info("No starred jobs to export. Star a job first.");
+                  return;
+                }
+                exportStarredBundle(jobs);
+                toast.success(`Exported ${starredCount} starred translation${starredCount === 1 ? "" : "s"} as a bundle.`);
+              }}
+              disabled={jobs.length === 0}
+            >
+              <Star className="h-4 w-4" /> Export starred
+            </Button>
             <Button
               variant="outline"
               size="sm"

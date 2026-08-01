@@ -238,6 +238,14 @@ main > div {
   animation: shimmer-skeleton 1.5s ease-in-out infinite;
 }
 
+/* Animated bar fill — grows from 0 to target width on mount. */
+@keyframes bar-grow {
+  from { width: 0%; }
+}
+.bar-grow {
+  animation: bar-grow 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Smooth row hover for tables. */
 .table-row-hover {
   transition: background-color 0.15s ease;

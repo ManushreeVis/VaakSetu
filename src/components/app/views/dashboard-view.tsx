@@ -301,11 +301,11 @@ export function DashboardView() {
                       </div>
                       <div className="flex h-2 overflow-hidden rounded-full bg-muted">
                         <div
-                          className="bg-emerald-500 transition-all"
+                          className="bar-grow bg-emerald-500 transition-all"
                           style={{ width: `${pct}%` }}
                         />
                         <div
-                          className="bg-rose-500 transition-all"
+                          className="bar-grow bg-rose-500 transition-all"
                           style={{ width: `${100 - pct}%` }}
                         />
                       </div>

@@ -684,3 +684,47 @@ Stage Summary:
 - Modified: api/stats/route.ts (+ratedUp +ratedDown counts), dashboard-view.tsx (+quality card +ThumbsUp/ThumbsDown +Stats interface), document-chat-view.tsx (+newSessionTitleRef +n keyboard listener +ref passthrough +subtitle hint), shortcuts-help.tsx (+n shortcut row).
 - No regressions. Lint clean. All features verified end-to-end.
 - Recommended next-round work: dark-mode visual QA, glossary search-by-category, translation comparison improvement with word-level diff, export starred translations as a bundle.
+
+---
+Task ID: R10
+Agent: webDevReview cron (round 10)
+Task: QA sweep (stable) → added export starred bundle + word/char counts + bar-grow animation.
+
+Work Log:
+- Read worklog.md (round 9: 12 views, rating summary, 'n' shortcut).
+- Curl QA: page renders "BhashaSetu", all APIs 200, star API works, 0 errors, lint clean. Project stable.
+- Note: glossary category filter already existed (round 2), so pivoted to word/char counts + starred bundle.
+
+FEATURE 1: Export starred translations as a bundle
+- Added `exportStarredBundle()` function to history-view.tsx:
+  - Filters starred jobs, builds a human-readable text file with header (title, timestamp, count).
+  - Each entry: kind badge, language pair, file name, created date, model, rating, then SOURCE / TRANSCRIPT / TRANSLATION / SUMMARY sections separated by dividers.
+  - BOM-prefixed UTF-8 .txt download named `bhashasetu-starred-YYYY-MM-DD.txt`.
+- Added "Export starred" button (Star icon) to the history view header (before "Export CSV").
+  - Disabled when no jobs; shows info toast if no starred jobs.
+  - Success toast with count.
+- Verified via curl: star toggle works (starred → 1 starred job found → unstarred).
+
+FEATURE 2: Word/character counts in text-translate view
+- Enhanced input footer: shows "N chars · M words" (tabular-nums for alignment).
+- Added output footer (below the translation): shows "N chars · M words · ~X min read".
+- Only renders when a result exists.
+- Estimated read time: chars / 500 (rounded up, min 1).
+
+STYLING POLISH:
+- Added `.bar-grow` CSS animation: grows bar width from 0% to target on mount (0.8s cubic-bezier).
+- Applied to the dashboard quality card's emerald/rose progress bar segments for a smooth fill-in effect.
+
+QA VERIFICATION:
+- Server returns 200, page renders "BhashaSetu".
+- All APIs return 200 (stats, jobs, glossary, models).
+- Star toggle verified: starred → 1 starred job → unstarred.
+- 0 errors in dev.log.
+- `bun run lint` clean.
+
+Stage Summary:
+- 2 features shipped: export starred bundle + word/char counts.
+- 0 new files.
+- Modified: history-view.tsx (+exportStarredBundle +Export starred button), text-translate-view.tsx (+word/char counts +read time), dashboard-view.tsx (bar-grow on quality bar), globals.css (+bar-grow keyframe).
+- No regressions. Lint clean. All features verified.
+- Recommended next-round work: dark-mode visual QA, translation comparison improvement with word-level diff, glossary bulk delete by category, dashboard "recent activity" time-range selector.

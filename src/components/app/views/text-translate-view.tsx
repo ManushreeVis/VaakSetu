@@ -171,7 +171,9 @@ export function TextTranslateView() {
               lang={source === "auto" ? undefined : source}
             />
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{charCount} characters</span>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {charCount} chars · {input.trim() ? input.trim().split(/\s+/).length : 0} words
+              </span>
               <Button onClick={translate} disabled={loading || !input.trim()} className="gap-1.5">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Languages className="h-4 w-4" />}
                 Translate
@@ -192,6 +194,12 @@ export function TextTranslateView() {
                 <span className="text-muted-foreground">The translated text will appear here.</span>
               )}
             </div>
+            {result && (
+              <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums">
+                <span>{result.text.length} chars · {result.text.trim() ? result.text.trim().split(/\s+/).length : 0} words</span>
+                <span>~{Math.max(1, Math.ceil(result.text.length / 500))} min read</span>
+              </div>
+            )}
             {result?.modelReason && (
               <p className="text-[11px] text-muted-foreground">{result.modelReason}</p>
             )}
