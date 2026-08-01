@@ -16,6 +16,7 @@ import { SummaryView } from "./views/summary-view";
 import { ConvertView } from "./views/convert-view";
 import { GlossaryView } from "./views/glossary-view";
 import { HistoryView } from "./views/history-view";
+import { OnboardingTour } from "./onboarding-tour";
 import { ModelsView } from "./views/models-view";
 import { FinetuneView } from "./views/finetune-view";
 import { SettingsView } from "./views/settings-view";
@@ -74,6 +75,7 @@ export function AppShell() {
                 variant="outline"
                 size="sm"
                 className="h-8 gap-2"
+                data-tour="palette-btn"
                 onClick={() => window.dispatchEvent(new CustomEvent("bhasha:toggle-palette"))}
               >
                 <Search className="h-3.5 w-3.5" />
@@ -109,6 +111,7 @@ export function AppShell() {
           <footer className="mt-auto border-t bg-background/80 px-4 py-4 backdrop-blur lg:px-8">
             <CommandPalette />
             <ShortcutsHelp />
+            <OnboardingTour />
             <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center">
               <p>
                 <span className="font-medium text-foreground">BhashaSetu</span> · भाषासेतु —

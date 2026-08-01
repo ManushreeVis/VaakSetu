@@ -80,6 +80,8 @@ const STATUS_STYLE: Record<string, string> = {
 
 export function DashboardView() {
   const setView = useAppStore((s) => s.setView);
+  const setDefaultSourceLang = useAppStore((s) => s.setDefaultSourceLang);
+  const setDefaultTargetLang = useAppStore((s) => s.setDefaultTargetLang);
   const [stats, setStats] = useState<Stats | null>(null);
   const [recent, setRecent] = useState<JobSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,6 +123,26 @@ export function DashboardView() {
             <Button variant="outline" onClick={() => setView("text")} className="gap-1.5">
               <Languages className="h-4 w-4" /> Translate text
             </Button>
+          </div>
+          {/* Quick language-pair chips */}
+          <div className="mt-4 flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Quick:</span>
+            {[
+              { src: "en", tgt: "hi" },
+              { src: "en", tgt: "mr" },
+              { src: "hi", tgt: "en" },
+              { src: "mr", tgt: "en" },
+              { src: "hi", tgt: "mr" },
+              { src: "mr", tgt: "hi" },
+            ].map((p) => (
+              <button
+                key={`${p.src}-${p.tgt}`}
+                onClick={() => { setDefaultSourceLang(p.src); setDefaultTargetLang(p.tgt); setView("text"); }}
+                className="rounded-full border bg-card px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+              >
+                {p.src} → {p.tgt}
+              </button>
+            ))}
           </div>
         </div>
       </div>

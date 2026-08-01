@@ -17,6 +17,8 @@ import {
   ListTree,
   AlertCircle,
   ArrowRight,
+  Film,
+  Check,
 } from "lucide-react";
 import { ViewHeader } from "../shared/view-header";
 import { LanguageSelect } from "../shared/language-select";
@@ -200,7 +202,47 @@ const ProgressBlock = ({ message, tick }: { message: string; tick: number }) => 
   );
 };
 
-/** Tabbed results panel. */
+/** Burn the SRT subtitles into the source video (hardcoded captions) and download. */
+const BurnCaptionsButton = ({ jobId, target }: { jobId: string; target: string }) => {
+  const [burning, setBurning] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const burn = async () => {
+    setBurning(true);
+    try {
+      const res = await fetch(`/api/media/${jobId}/burn`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Failed to burn captions.");
+      // Trigger download of the burned video.
+      downloadUrl(`/api/download/${jobId}/${data.downloadName}`, data.downloadName);
+      setDone(true);
+      toast.success(`Burned captions into video (${data.downloadName}).`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to burn captions.");
+    } finally {
+      setBurning(false);
+    }
+  };
+
+  return (
+    <Button
+      size="sm"
+      variant="default"
+      className="gap-1.5"
+      onClick={burn}
+      disabled={burning}
+    >
+      {burning ? (
+        <><Loader2 className="h-4 w-4 animate-spin" /> Burning captions…</>
+      ) : done ? (
+        <><Check className="h-4 w-4" /> Burned — download again</>
+      ) : (
+        <><Film className="h-4 w-4" /> Burn into video</>
+      )}
+    </Button>
+  );
+};
+
 const ResultsTabs = ({ result, target }: { result: MediaResult; target: string }) => {
   const audioName = result.outputAudioPath ? basename(result.outputAudioPath) : null;
   const audioUrl = audioName ? `/api/download/${result.jobId}/${audioName}` : null;
@@ -307,6 +349,7 @@ const ResultsTabs = ({ result, target }: { result: MediaResult; target: string }
                       <Download className="h-4 w-4" /> Download VTT
                     </Button>
                   )}
+                  <BurnCaptionsButton jobId={result.jobId} target={target} />
                 </div>
                 <ScrollArea className="h-96 rounded-lg border">
                   <pre className="bg-muted/30 p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">

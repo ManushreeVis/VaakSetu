@@ -26,6 +26,7 @@ import {
   Settings,
   Search,
   CornerDownLeft,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { useAppStore, type ViewId } from "./app-store";
@@ -112,6 +113,7 @@ export function CommandPalette() {
   const actionItems = useMemo<PaletteItem[]>(
     () => [
       { id: "act-open-sidebar", label: "Open navigation menu (mobile)", icon: Search, group: "Actions", run: () => { setSidebarOpen(true); setOpen(false); } },
+      { id: "act-restart-tour", label: "Restart guided tour", icon: Sparkles, group: "Actions", run: () => { window.dispatchEvent(new CustomEvent("bhasha:restart-tour")); setOpen(false); } },
     ],
     [setSidebarOpen],
   );

@@ -376,3 +376,63 @@ Stage Summary:
 - Modified: TextTranslator.tsx (+glossary apply), domain/types.ts (+GlossaryApplied/GlossaryMatch), text-translate-view.tsx (+glossary badge), dashboard-view.tsx (+chart +glossary stat), api/stats/route.ts (+jobsPerDay +glossaryCount), GlossaryService.tsx (real implementation).
 - No regressions. Lint clean. All features verified.
 - Recommended next-round work: burned-in-caption export in media view, guided onboarding tour, glossary auto-suggest from translation history, dark-mode visual QA.
+
+---
+Task ID: R4
+Agent: webDevReview cron (round 4)
+Task: QA sweep (stable) → added burned-in captions export + guided onboarding tour + language-pair quick-switch chips.
+
+Work Log:
+- Read worklog.md (round 3: 12 views, glossary integrated into pipeline, activity chart).
+- Curl QA: page renders "BhashaSetu", all APIs 200, 0 errors in dev.log, lint clean. Project stable.
+- Focused on 3 high-value additions: burned-in captions, onboarding tour, dashboard quick-switch.
+
+FEATURE 1: Burned-in captions export (media view)
+- Created `CaptionBurner` application service (`src/lib/application/CaptionBurner.ts`):
+  fetches a media Job, writes its outputSrt to a temp file, calls ffmpeg's `subtitles` filter
+  (already in utils/ffmpeg.ts) to burn the captions into the source video, saves the output MP4,
+  cleans up temp files. Returns the download path.
+- Created API route `POST /api/media/[id]/burn` (400 if job not found / no SRT / not media; 500 on ffmpeg error).
+- Added `BurnCaptionsButton` sub-component to media-translate-view's Subtitles tab:
+  primary "Burn into video" button with Film icon → loading state "Burning captions…" →
+  success state "Burned — download again". Auto-triggers download of the burned MP4 on success.
+  Error toasts on failure.
+- Verified via curl: POST /api/media/test/burn returns 400 "Job not found" (route wired correctly, not 404).
+
+FEATURE 2: Guided onboarding tour (first-run experience)
+- Created `SpotlightTour` component (`src/components/app/spotlight-tour.tsx`):
+  - Dark overlay with a cutout ring highlighting the target element (box-shadow trick).
+  - Tooltip card positioned below the target (or centered if no selector).
+  - 7 steps: brand welcome → text translate → media → chat → glossary → command palette → "you're all set".
+  - Progress dots (clickable), Back/Next buttons, keyboard nav (←/→/Enter/Esc).
+  - Re-measures target on resize/scroll (rAF-based, lint-clean).
+- Created `OnboardingTour` wrapper (`src/components/app/onboarding-tour.tsx`):
+  - Shows automatically on first visit (localStorage `bhashasetu:onboarded` key).
+  - 600ms delay so the app shell renders first.
+  - Exposes a `bhasha:restart-tour` CustomEvent for re-triggering from Settings / command palette.
+- Added `data-tour` attributes: brand (sidebar), nav-* (all nav buttons), palette-btn (header Search).
+- Wired into app-shell.tsx (rendered in the footer alongside CommandPalette + ShortcutsHelp).
+- Added "Restart tour" button to Settings → Preferences card.
+- Added "Restart guided tour" action to the command palette (⌘K).
+- Lint-clean (resolved react-hooks/set-state-in-effect + preserve-manual-memoization rules by
+  inlining measurement logic and deriving effectiveRect from hasSelector).
+
+FEATURE 3: Language-pair quick-switch chips (dashboard)
+- Added 6 quick-pair chips to the dashboard hero (EN→HI, EN→MR, HI→EN, MR→EN, HI→MR, MR→HI).
+- Clicking a chip sets the store's defaultSourceLang + defaultTargetLang and navigates to Text Translate.
+- Styled as rounded-full outline chips with hover→primary transition.
+
+QA VERIFICATION:
+- Server returns 200, page renders "BhashaSetu".
+- Burn API route wired correctly (POST /api/media/test/burn → 400 "Job not found", not 404).
+- All APIs return 200 (stats, jobs, glossary, models, chat/sessions, finetune/datasets).
+- 0 errors in dev.log (no Module not found, no panic, no FATAL).
+- `bun run lint` clean.
+- data-tour attributes confirmed in source (brand, nav-*, palette-btn).
+
+Stage Summary:
+- 3 features shipped: burned-in captions export, guided onboarding tour, language-pair quick-switch chips.
+- 5 new files: CaptionBurner.ts, api/media/[id]/burn/route.ts, spotlight-tour.tsx, onboarding-tour.tsx.
+- Modified: media-translate-view.tsx (+BurnCaptionsButton +Film/Check icons), app-shell.tsx (+OnboardingTour +data-tour on palette-btn), sidebar-nav.tsx (+data-tour on brand + nav buttons), settings-view.tsx (+Restart tour button +Button import), command-palette.tsx (+Restart tour action +Sparkles import), dashboard-view.tsx (+lang-pair chips +store setters).
+- No regressions. Lint clean. All features verified.
+- Recommended next-round work: glossary auto-suggest from translation history, dark-mode visual QA, keyboard shortcut for "new session" in chat, export-history-as-CSV.

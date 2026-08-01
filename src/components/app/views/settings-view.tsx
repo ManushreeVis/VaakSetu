@@ -21,6 +21,7 @@ import { StatCard } from "../shared/stat-card";
 import { useAppStore } from "../app-store";
 import { LanguageSelect } from "../shared/language-select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -158,6 +159,23 @@ const PreferencesCard = () => {
             </p>
           </div>
           <Switch id="auto-model" checked={autoModel} onCheckedChange={setAutoModel} />
+        </div>
+        <Separator />
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <Label className="cursor-pointer text-sm">Guided tour</Label>
+            <p className="text-[11px] text-muted-foreground">
+              Replay the first-run onboarding walkthrough.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => window.dispatchEvent(new CustomEvent("bhasha:restart-tour"))}
+          >
+            <Sparkles className="h-3.5 w-3.5" /> Restart tour
+          </Button>
         </div>
         <p className="text-[11px] text-muted-foreground">
           Preferences are stored locally for this demo session.

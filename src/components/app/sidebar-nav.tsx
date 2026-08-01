@@ -67,7 +67,7 @@ export function SidebarNav() {
         )}
       >
         {/* Brand */}
-        <div className="flex items-center justify-between gap-2 px-5 py-5">
+        <div className="flex items-center justify-between gap-2 px-5 py-5" data-tour="brand">
           <div className="flex items-center gap-3">
             <div className="logo-shimmer flex h-10 w-10 items-center justify-center rounded-xl text-primary-foreground shadow-sm">
               <span className="text-lg font-bold">भा</span>
@@ -102,6 +102,7 @@ export function SidebarNav() {
                   return (
                     <button
                       key={item.id}
+                      data-tour={`nav-${item.id}`}
                       onClick={() => setView(item.id)}
                       className={cn(
                         "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
