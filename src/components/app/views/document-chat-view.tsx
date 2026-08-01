@@ -104,9 +104,10 @@ const timeAgo = (iso: string): string => {
 
 interface NewSessionFormProps {
   onCreated: (id: string) => void;
+  titleRef?: React.RefObject<HTMLInputElement | null>;
 }
 
-const NewSessionForm = ({ onCreated }: NewSessionFormProps) => {
+const NewSessionForm = ({ onCreated, titleRef }: NewSessionFormProps) => {
   const { defaultSourceLang, defaultTargetLang, setDefaultSourceLang, setDefaultTargetLang } =
     useAppStore();
   const [title, setTitle] = useState("");
@@ -186,6 +187,7 @@ const NewSessionForm = ({ onCreated }: NewSessionFormProps) => {
           <Label htmlFor="dc-title" className="text-xs">Title</Label>
           <Input
             id="dc-title"
+            ref={titleRef}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. BAIF annual report"
@@ -506,6 +508,23 @@ export function DocumentChatView() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
+  const newSessionTitleRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard shortcut: "n" focuses the new-session title input (when not typing).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable)) return;
+      if (e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        newSessionTitleRef.current?.focus();
+        newSessionTitleRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const loadList = useCallback(async () => {
     setLoadingList(true);
@@ -664,13 +683,13 @@ export function DocumentChatView() {
         icon={MessagesSquare}
         title="Chat with your Document"
         nativeTitle="दस्तऐवजाशी संभाषण"
-        subtitle="Ask questions about your document — by text or voice. Answers are spoken back in your language."
+        subtitle="Ask questions about your document — by text or voice. Answers are spoken back in your language. Press 'n' to start a new session."
       />
 
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         {/* LEFT — new session + sessions list */}
         <div className={cn("space-y-4", active && "hidden lg:block")}>
-          <NewSessionForm onCreated={handleCreated} />
+          <NewSessionForm onCreated={handleCreated} titleRef={newSessionTitleRef} />
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Recent chats</CardTitle>

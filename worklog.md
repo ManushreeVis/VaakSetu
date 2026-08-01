@@ -643,3 +643,44 @@ Stage Summary:
 - Modified: schema.prisma (+rating), job-repository.ts (+rating select +setRating), history-view.tsx (+RatingButtons +ThumbsUp/ThumbsDown +rating in CSV), glossary-view.tsx (+exportCsv +importCsv +CSV button +Import CSV in footer +empty state).
 - No regressions. Lint clean. All features verified end-to-end.
 - Recommended next-round work: dark-mode visual QA, keyboard shortcut for "new session" in chat, rating summary on dashboard, glossary search-by-category.
+
+---
+Task ID: R9
+Agent: webDevReview cron (round 9)
+Task: QA sweep (stable) → added rating summary on dashboard + keyboard shortcut 'n' for new chat session.
+
+Work Log:
+- Read worklog.md (round 8: 12 views, quality rating, glossary CSV import/export).
+- Curl QA: page renders "BhashaSetu", all APIs 200, rate API works, 0 errors, lint clean. Project stable.
+
+FEATURE 1: Rating summary on dashboard
+- Enhanced /api/stats to return `ratedUp` and `ratedDown` counts (db.job.count with rating filter).
+- Updated the dashboard Stats interface to include `ratedUp?` and `ratedDown?`.
+- Added a "Translation quality" Card to the dashboard's right column (above Supported languages):
+  * Shows thumbs-up count (emerald) vs thumbs-down count (rose) with a big % approval in the center.
+  * A 2-segment progress bar (emerald + rose) visualizing the ratio.
+  * Subtle caption: "N translations rated · X% approval".
+  * Only renders when at least 1 rating exists (conditional, no clutter when unrated).
+- Added ThumbsUp/ThumbsDown icons to dashboard imports.
+- Verified via curl: stats API returns ratedUp=0, ratedDown=0 (correct, no ratings currently set).
+
+FEATURE 2: Keyboard shortcut 'n' for new chat session
+- Added a `newSessionTitleRef` (useRef<HTMLInputElement>) to DocumentChatView.
+- Added a global keydown listener: when 'n' is pressed (no modifiers, not typing in an input/textarea/select/contenteditable), it focuses the new-session title input and scrolls it into view.
+- Passed the ref through NewSessionFormProps → NewSessionForm → the title Input.
+- Updated the chat view subtitle to mention "Press 'n' to start a new session."
+- Added the 'n' shortcut to the shortcuts-help dialog.
+
+QA VERIFICATION:
+- Server returns 200, page renders "BhashaSetu".
+- All APIs return 200 (stats, jobs, glossary, models, chat/sessions).
+- Stats API returns ratedUp + ratedDown fields.
+- 0 errors in dev.log.
+- `bun run lint` clean.
+
+Stage Summary:
+- 2 features shipped: rating summary on dashboard + keyboard shortcut 'n' for new chat session.
+- 0 new files.
+- Modified: api/stats/route.ts (+ratedUp +ratedDown counts), dashboard-view.tsx (+quality card +ThumbsUp/ThumbsDown +Stats interface), document-chat-view.tsx (+newSessionTitleRef +n keyboard listener +ref passthrough +subtitle hint), shortcuts-help.tsx (+n shortcut row).
+- No regressions. Lint clean. All features verified end-to-end.
+- Recommended next-round work: dark-mode visual QA, glossary search-by-category, translation comparison improvement with word-level diff, export starred translations as a bundle.

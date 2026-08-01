@@ -17,6 +17,8 @@ import {
   Loader2,
   Sparkles,
   Star,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import { useAppStore, type ViewId } from "../app-store";
 import { ViewHeader } from "../shared/view-header";
@@ -38,6 +40,8 @@ interface Stats {
   fineTuneJobsRunning: number;
   glossaryCount?: number;
   jobsPerDay?: { day: string; count: number }[];
+  ratedUp?: number;
+  ratedDown?: number;
 }
 
 interface JobSummary {
@@ -272,6 +276,49 @@ export function DashboardView() {
 
         {/* Languages + formats */}
         <div className="space-y-6">
+          {/* Translation quality summary */}
+          {stats && (stats.ratedUp || 0) + (stats.ratedDown || 0) > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Translation quality</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {(() => {
+                  const up = stats.ratedUp ?? 0;
+                  const down = stats.ratedDown ?? 0;
+                  const total = up + down;
+                  const pct = total > 0 ? Math.round((up / total) * 100) : 0;
+                  return (
+                    <>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+                          <ThumbsUp className="h-4 w-4" /> {up} good
+                        </span>
+                        <span className="text-2xl font-semibold tabular-nums">{pct}%</span>
+                        <span className="flex items-center gap-1.5 font-medium text-rose-600 dark:text-rose-400">
+                          <ThumbsDown className="h-4 w-4" /> {down} needs work
+                        </span>
+                      </div>
+                      <div className="flex h-2 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="bg-emerald-500 transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                        <div
+                          className="bg-rose-500 transition-all"
+                          style={{ width: `${100 - pct}%` }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        {total} translation{total === 1 ? "" : "s"} rated · {pct}% approval
+                      </p>
+                    </>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Supported languages</CardTitle>

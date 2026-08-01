@@ -24,13 +24,15 @@ const lastNDays = (n: number): string[] => {
 };
 
 export async function GET() {
-  const [byStatus, byKind, total, fineTuneDatasets, fineTuneJobsRunning, glossaryCount] = await Promise.all([
+  const [byStatus, byKind, total, fineTuneDatasets, fineTuneJobsRunning, glossaryCount, ratedUp, ratedDown] = await Promise.all([
     JobRepository.countByStatus(),
     JobRepository.countByKind(),
     db.job.count(),
     FineTuneRepository.listDatasets(),
     db.fineTuneJob.count({ where: { status: "running" } }),
     db.glossaryEntry.count(),
+    db.job.count({ where: { rating: "up" } }),
+    db.job.count({ where: { rating: "down" } }),
   ]);
 
   const statusCounts: Record<string, number> = {};
@@ -68,5 +70,7 @@ export async function GET() {
     fineTuneJobsRunning,
     glossaryCount,
     jobsPerDay,
+    ratedUp,
+    ratedDown,
   });
 }

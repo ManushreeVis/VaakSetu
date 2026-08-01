@@ -18,6 +18,7 @@ interface ShortcutRow {
 const ROWS: ShortcutRow[] = [
   { keys: "⌘ K", action: "Open command palette" },
   { keys: "?", action: "Toggle this shortcuts help" },
+  { keys: "n", action: "New chat session (in Chat view)" },
   { keys: "g  d", action: "Go to Dashboard" },
   { keys: "g  t", action: "Go to Text Translation" },
   { keys: "g  b", action: "Go to Batch Translation" },
