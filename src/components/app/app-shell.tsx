@@ -14,6 +14,7 @@ import { MediaTranslateView } from "./views/media-translate-view";
 import { DocumentChatView } from "./views/document-chat-view";
 import { SummaryView } from "./views/summary-view";
 import { ConvertView } from "./views/convert-view";
+import { GlossaryView } from "./views/glossary-view";
 import { HistoryView } from "./views/history-view";
 import { ModelsView } from "./views/models-view";
 import { FinetuneView } from "./views/finetune-view";
@@ -27,6 +28,7 @@ const VIEW_TITLES: Record<string, { title: string; native: string }> = {
   chat: { title: "Chat with your Document", native: "दस्तऐवजाशी संभाषण" },
   summary: { title: "Summarize", native: "सारांश" },
   convert: { title: "Format Conversion", native: "स्वरूप रूपांतर" },
+  glossary: { title: "Glossary", native: "शब्दकोश" },
   history: { title: "History", native: "इतिहास" },
   models: { title: "Models & Auto-Select", native: "प्रारूपे व स्वयंचलित निवड" },
   finetune: { title: "Fine-tune Models", native: "प्रारूप फाइन-ट्यूनिंग" },
@@ -95,6 +97,7 @@ export function AppShell() {
               {activeView === "chat" && <DocumentChatView />}
               {activeView === "summary" && <SummaryView />}
               {activeView === "convert" && <ConvertView />}
+              {activeView === "glossary" && <GlossaryView />}
               {activeView === "history" && <HistoryView />}
               {activeView === "models" && <ModelsView />}
               {activeView === "finetune" && <FinetuneView />}

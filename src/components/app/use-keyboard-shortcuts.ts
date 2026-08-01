@@ -15,6 +15,7 @@ const GOTO: ShortcutMapping = {
   c: "chat",
   s: "summary",
   f: "convert",
+  g: "glossary",
   h: "history",
   o: "models",
   n: "finetune",

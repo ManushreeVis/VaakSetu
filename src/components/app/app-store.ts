@@ -10,6 +10,7 @@ export type ViewId =
   | "chat"
   | "summary"
   | "convert"
+  | "glossary"
   | "history"
   | "models"
   | "finetune"

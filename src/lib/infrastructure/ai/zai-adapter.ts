@@ -8,8 +8,8 @@
  */
 
 import ZAI from "z-ai-web-dev-sdk";
-import fs from "node:fs/promises";
-import path from "node:path";
+import fs from "fs/promises";
+import path from "path";
 import {
   LANGUAGES,
   languageLabel,

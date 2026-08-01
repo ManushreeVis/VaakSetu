@@ -6,9 +6,9 @@
  *  - burn subtitle file into a video (burned-in captions)
  */
 
-import { spawn } from "node:child_process";
-import path from "node:path";
-import fs from "node:fs/promises";
+import { spawn } from "child_process";
+import path from "path";
+import fs from "fs/promises";
 
 const runFfmpeg = (args: string[]): Promise<void> =>
   new Promise((resolve, reject) => {

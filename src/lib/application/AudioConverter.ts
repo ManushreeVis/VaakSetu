@@ -3,7 +3,7 @@
 import { convertAudio } from "@/lib/utils/ffmpeg";
 import { JobRepository } from "@/lib/infrastructure/repositories/job-repository";
 import { saveOutput } from "@/lib/infrastructure/storage/file-storage";
-import path from "node:path";
+import path from "path";
 
 export interface AudioConversionRequest {
   inputPath: string;

@@ -1,6 +1,6 @@
 /** DocumentChatService — chat (text or voice) with an uploaded document. */
 
-import path from "node:path";
+import path from "path";
 import { aiEngines, extractDocumentText } from "@/lib/infrastructure/ai/zai-adapter";
 import { ChatRepository } from "@/lib/infrastructure/repositories/chat-repository";
 import { saveOutput } from "@/lib/infrastructure/storage/file-storage";

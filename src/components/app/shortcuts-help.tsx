@@ -25,6 +25,7 @@ const ROWS: ShortcutRow[] = [
   { keys: "g  c", action: "Go to Chat with Document" },
   { keys: "g  s", action: "Go to Summarize" },
   { keys: "g  f", action: "Go to Format Conversion" },
+  { keys: "g  g", action: "Go to Glossary" },
   { keys: "g  h", action: "Go to History" },
   { keys: "g  o", action: "Go to Models" },
   { keys: "g  n", action: "Go to Fine-tune" },

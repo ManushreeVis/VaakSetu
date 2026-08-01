@@ -8,6 +8,7 @@ import {
   MessagesSquare,
   ScrollText,
   Repeat2,
+  BookOpen,
   History,
   Wand2,
   Cpu,
@@ -55,6 +56,7 @@ const QUICK_ACTIONS: { view: ViewId; icon: typeof Languages; label: string; nati
   { view: "chat", icon: MessagesSquare, label: "Chat with Document", native: "दस्तऐवज", desc: "Ask questions, by voice or text" },
   { view: "summary", icon: ScrollText, label: "Summarize", native: "सारांश", desc: "Any language, bullets or paragraph" },
   { view: "convert", icon: Repeat2, label: "Convert Formats", native: "स्वरूप", desc: "SRT · VTT · audio transcode" },
+  { view: "glossary", icon: BookOpen, label: "Glossary", native: "शब्दकोश", desc: "Consistent domain terminology" },
   { view: "finetune", icon: Wand2, label: "Fine-tune Model", native: "फाइन-ट्यून", desc: "Adapt IndicTrans2 to your domain" },
 ];
 

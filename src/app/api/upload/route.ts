@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { saveUpload } from "@/lib/infrastructure/storage/file-storage";
 import { getFormatByExt, MAX_UPLOAD_BYTES, formatBytes } from "@/lib/domain/media-formats";
 import path from "node/path";
-import { randomUUID } from "node:crypto";
+import { randomUUID } from "crypto";
 import type { ApiError } from "@/lib/domain/types";
 
 export const runtime = "nodejs";

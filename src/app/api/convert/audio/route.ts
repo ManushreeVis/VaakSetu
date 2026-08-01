@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { AudioConverter } from "@/lib/application/AudioConverter";
 import { saveUpload } from "@/lib/infrastructure/storage/file-storage";
 import { formatBytes, MAX_UPLOAD_BYTES } from "@/lib/domain/media-formats";
-import path from "node:path";
+import path from "path";
 import type { ApiError } from "@/lib/domain/types";
 
 export const runtime = "nodejs";

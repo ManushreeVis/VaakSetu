@@ -3,8 +3,8 @@
  * On-prem deployments can swap this for a network file-server mount.
  */
 
-import fs from "node:fs/promises";
-import path from "node:path";
+import fs from "fs/promises";
+import path from "path";
 
 const STORAGE_ROOT = path.join(process.cwd(), "storage");
 const UPLOADS_DIR = path.join(STORAGE_ROOT, "uploads");

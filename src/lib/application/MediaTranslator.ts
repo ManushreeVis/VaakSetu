@@ -5,7 +5,7 @@
  * Persists a history Job and all generated artifacts (translated text, TTS audio, SRT, VTT).
  */
 
-import path from "node:path";
+import path from "path";
 import { aiEngines } from "@/lib/infrastructure/ai/zai-adapter";
 import { JobRepository } from "@/lib/infrastructure/repositories/job-repository";
 import { saveOutput } from "@/lib/infrastructure/storage/file-storage";

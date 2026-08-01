@@ -155,3 +155,28 @@ model Setting {
   key   String @id
   value String
 }
+
+/// A domain glossary entry — a curated translation for a specific term, used to
+/// enforce consistent terminology across translations (e.g. "drip irrigation" → "ठिबक सिंचन").
+model GlossaryEntry {
+  id         String   @id @default(cuid())
+  /// Source language code: "mr" | "hi" | "en"
+  sourceLang String
+  /// Target language code: "mr" | "hi" | "en"
+  targetLang String
+  /// The source term (case-insensitive lookup)
+  source     String
+  /// The approved translation
+  target     String
+  /// Optional domain category: "agriculture" | "finance" | "health" | "general" | ...
+  category   String   @default("general")
+  /// Optional note / context
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([sourceLang, targetLang, source])
+  @@index([sourceLang])
+  @@index([targetLang])
+  @@index([category])
+}

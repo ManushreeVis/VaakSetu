@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import path from "node/path";
-import fs from "node:fs/promises";
+import path from "path";
+import fs from "fs/promises";
 import { fileExists } from "@/lib/infrastructure/storage/file-storage";
 
 export const runtime = "nodejs";
