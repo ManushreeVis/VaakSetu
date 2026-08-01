@@ -18,6 +18,8 @@ model Job {
   /// "queued" | "running" | "completed" | "failed" | "canceled"
   status      String   @default("queued")
   progress    Int      @default(0)
+  /// User-starred (pinned) for quick access
+  starred     Boolean  @default(false)
   /// Source language code: "mr" | "hi" | "en" | "auto"
   sourceLang  String
   /// Target language code: "mr" | "hi" | "en"

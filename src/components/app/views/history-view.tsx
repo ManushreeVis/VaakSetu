@@ -16,6 +16,8 @@ import {
   XCircle,
   Loader2,
   ArrowRight,
+  Download,
+  Star,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -111,6 +113,37 @@ const inputLabel = (job: JobDto) =>
   job.inputName ?? (job.inputText ? truncate(job.inputText) : "Untitled job");
 
 const basename = (p: string) => p.split(/[\\/]/).pop() ?? p;
+
+/** Escape a value for CSV (RFC 4180: quote fields containing commas, quotes, newlines). */
+const csvCell = (v: unknown): string => {
+  const s = v == null ? "" : String(v);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+};
+
+/** Export an array of jobs as a CSV file (client-side Blob download). */
+const exportJobsAsCsv = (jobs: JobDto[]) => {
+  const headers = [
+    "id", "kind", "status", "starred", "sourceLang", "targetLang",
+    "inputName", "inputText", "transcript", "outputText", "summary",
+    "model", "modelReason", "durationSec", "createdAt",
+  ];
+  const rows = jobs.map((j) => [
+    j.id, j.kind, j.status, j.starred ? "yes" : "no", j.sourceLang, j.targetLang,
+    j.inputName ?? "", j.inputText ?? "", j.transcript ?? "", j.outputText ?? "", j.summary ?? "",
+    j.model ?? "", j.modelReason ?? "", j.durationSec ?? "", j.createdAt,
+  ]);
+  const csv = [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `bhashasetu-history-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
 
 const downloadText = (filename: string, content: string) => {
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
@@ -289,6 +322,50 @@ const JobDetailDialog = ({
   );
 };
 
+const StarButton = ({
+  jobId,
+  starred,
+  onToggled,
+}: {
+  jobId: string;
+  starred: boolean;
+  onToggled: () => void;
+}) => {
+  const [busy, setBusy] = useState(false);
+  const handleToggle = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/jobs/${jobId}/star`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ starred: !starred }),
+      });
+      if (!res.ok) throw new Error("Failed to toggle star");
+      toast.success(starred ? "Removed from favorites" : "Added to favorites");
+      onToggled();
+    } catch {
+      toast.error("Failed to toggle favorite");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8"
+      onClick={handleToggle}
+      disabled={busy}
+      aria-label={starred ? "Remove from favorites" : "Add to favorites"}
+      title={starred ? "Remove from favorites" : "Add to favorites"}
+    >
+      <Star
+        className={`h-4 w-4 ${starred ? "fill-amber-400 text-amber-500" : "text-muted-foreground"}`}
+      />
+    </Button>
+  );
+};
+
 const DeleteJobButton = ({
   jobId,
   onDeleted,
@@ -353,11 +430,14 @@ const DeleteJobButton = ({
 };
 
 const HistoryRow = ({ job, onView }: { job: JobDto; onView: () => void }) => (
-  <TableRow className="hover:bg-muted/40">
+  <TableRow className={`hover:bg-muted/40 ${job.starred ? "bg-amber-50/40 dark:bg-amber-950/10" : ""}`}>
     <TableCell>
-      <Badge variant="outline" className={KIND_STYLE[job.kind] ?? ""}>
-        {KIND_LABEL[job.kind] ?? job.kind}
-      </Badge>
+      <div className="flex items-center gap-1.5">
+        {job.starred && <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-500" />}
+        <Badge variant="outline" className={KIND_STYLE[job.kind] ?? ""}>
+          {KIND_LABEL[job.kind] ?? job.kind}
+        </Badge>
+      </div>
     </TableCell>
     <TableCell className="whitespace-nowrap text-sm font-medium">
       {languageLabel(job.sourceLang)}{" "}
@@ -381,6 +461,11 @@ const HistoryRow = ({ job, onView }: { job: JobDto; onView: () => void }) => (
     </TableCell>
     <TableCell className="text-right">
       <div className="flex items-center justify-end gap-1">
+        <StarButton
+          jobId={job.id}
+          starred={job.starred}
+          onToggled={() => window.dispatchEvent(new CustomEvent("job-deleted"))}
+        />
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onView} aria-label="View details">
           <Eye className="h-4 w-4" />
         </Button>
@@ -410,6 +495,11 @@ const HistoryCard = ({ job, onView }: { job: JobDto; onView: () => void }) => (
         {job.model && <ModelBadge modelId={job.model} />}
       </div>
       <div className="flex items-center justify-end gap-1">
+        <StarButton
+          jobId={job.id}
+          starred={job.starred}
+          onToggled={() => window.dispatchEvent(new CustomEvent("job-deleted"))}
+        />
         <Button variant="outline" size="sm" className="gap-1.5" onClick={onView}>
           <Eye className="h-4 w-4" /> View
         </Button>
@@ -426,6 +516,7 @@ export function HistoryView() {
   const [debouncedQ, setDebouncedQ] = useState("");
   const [kind, setKind] = useState("all");
   const [status, setStatus] = useState("all");
+  const [starredOnly, setStarredOnly] = useState(false);
   const [detailJob, setDetailJob] = useState<JobDto | null>(null);
 
   const load = useCallback(async () => {
@@ -435,6 +526,7 @@ export function HistoryView() {
       if (kind !== "all") params.set("kind", kind);
       if (status !== "all") params.set("status", status);
       if (debouncedQ) params.set("q", debouncedQ);
+      if (starredOnly) params.set("starred", "true");
       params.set("limit", "200");
       const res = await fetch(`/api/jobs?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to load");
@@ -445,7 +537,7 @@ export function HistoryView() {
     } finally {
       setLoading(false);
     }
-  }, [kind, status, debouncedQ]);
+  }, [kind, status, debouncedQ, starredOnly]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(q), 300);
@@ -479,9 +571,27 @@ export function HistoryView() {
         nativeTitle="इतिहास"
         subtitle="Every translation, transcription and conversion — searchable, re-downloadable, deletable."
         actions={
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void load()}>
-            <RefreshCw className="h-4 w-4" /> Refresh
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                if (jobs.length === 0) {
+                  toast.info("No jobs to export.");
+                  return;
+                }
+                exportJobsAsCsv(jobs);
+                toast.success(`Exported ${jobs.length} job${jobs.length === 1 ? "" : "s"} to CSV.`);
+              }}
+              disabled={jobs.length === 0}
+            >
+              <Download className="h-4 w-4" /> Export CSV
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void load()}>
+              <RefreshCw className="h-4 w-4" /> Refresh
+            </Button>
+          </>
         }
       />
 
@@ -541,6 +651,16 @@ export function HistoryView() {
                 <SelectItem value="queued">Queued</SelectItem>
               </SelectContent>
             </Select>
+            <Button
+              variant={starredOnly ? "default" : "outline"}
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setStarredOnly((v) => !v)}
+              aria-pressed={starredOnly}
+            >
+              <Star className={`h-3.5 w-3.5 ${starredOnly ? "fill-current" : ""}`} />
+              <span className="hidden sm:inline">Starred</span>
+            </Button>
           </div>
         </CardContent>
       </Card>

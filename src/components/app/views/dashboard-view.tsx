@@ -102,7 +102,7 @@ export function DashboardView() {
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <div className="mesh-hero relative overflow-hidden rounded-2xl border p-6 sm:p-8">
+      <div className="mesh-hero-animated relative overflow-hidden rounded-2xl border p-6 sm:p-8">
         <div className="relative z-10 max-w-2xl">
           <Badge className="mb-3 gap-1 bg-primary/15 text-primary hover:bg-primary/15">
             <Sparkles className="h-3 w-3" /> Tech for Good · BAIF

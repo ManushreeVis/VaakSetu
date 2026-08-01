@@ -436,3 +436,55 @@ Stage Summary:
 - Modified: media-translate-view.tsx (+BurnCaptionsButton +Film/Check icons), app-shell.tsx (+OnboardingTour +data-tour on palette-btn), sidebar-nav.tsx (+data-tour on brand + nav buttons), settings-view.tsx (+Restart tour button +Button import), command-palette.tsx (+Restart tour action +Sparkles import), dashboard-view.tsx (+lang-pair chips +store setters).
 - No regressions. Lint clean. All features verified.
 - Recommended next-round work: glossary auto-suggest from translation history, dark-mode visual QA, keyboard shortcut for "new session" in chat, export-history-as-CSV.
+
+---
+Task ID: R5
+Agent: webDevReview cron (round 5)
+Task: QA sweep (stable) → added history CSV export + translation favorites/pin + animated hero gradient.
+
+Work Log:
+- Read worklog.md (round 4: 12 views, burned-in captions, onboarding tour, lang-pair chips).
+- Curl QA: page renders "BhashaSetu", all APIs 200, 0 errors, lint clean. Project stable.
+
+FEATURE 1: History CSV export (bulk export for reporting)
+- Added `exportJobsAsCsv()` client-side function in history-view.tsx: RFC 4180 compliant CSV with
+  proper escaping (quotes, commas, newlines), BOM for Excel, 14 columns (id, kind, status, starred,
+  sourceLang, targetLang, inputName, inputText, transcript, outputText, summary, model, modelReason,
+  durationSec, createdAt). Filename: `bhashasetu-history-YYYY-MM-DD.csv`.
+- Added "Export CSV" button to the History view header (disabled when no jobs, toast on success).
+- Exports the currently-filtered job list (respects search/kind/status/starred filters).
+
+FEATURE 2: Translation favorites/pin (star important translations)
+- Schema: added `starred Boolean @default(false)` to the Job model, pushed via `bun run db:push`.
+- Repository: added `starred` to the select + JobRecord interface, added `toggleStar(id, starred)` method,
+  added `starred` filter to `list()`, and changed orderBy to `[{ starred: "desc" }, { createdAt: "desc" }]`
+  so starred jobs float to the top.
+- API: `GET /api/jobs` now accepts `?starred=true` filter. New `PATCH /api/jobs/[id]/star` with
+  `{starred: boolean}` body → returns the updated job.
+- UI (history-view.tsx):
+  * `StarButton` component: ghost icon button with Star icon (amber fill when starred).
+  * Added to both HistoryRow (table) and HistoryCard (mobile) action groups.
+  * Starred rows get a subtle amber-tinted background + an amber star indicator next to the kind badge.
+  * "Starred" filter toggle button in the toolbar (primary when active, outline when inactive).
+  * CSV export includes the `starred` column.
+- Verified via curl: PATCH /api/jobs/<id>/star with {starred:true} → 200 + starred:true; with
+  {starred:false} → 200 + starred:false. Filter ?starred=true works.
+
+STYLING POLISH:
+- Added `.mesh-hero-animated` CSS class: slowly drifting radial gradient blobs (18s ease-in-out infinite)
+  for the dashboard hero — replaces the static `.mesh-hero` for a more dynamic first impression.
+- Starred rows have a subtle `bg-amber-50/40 dark:bg-amber-950/10` tint for visual distinction.
+
+QA VERIFICATION:
+- Server returns 200, page renders "BhashaSetu".
+- All APIs return 200 (stats, jobs, glossary, models).
+- Star toggle API verified: starred:true → 200, starred:false → 200, ?starred=true filter works.
+- 0 errors in dev.log.
+- `bun run lint` clean.
+
+Stage Summary:
+- 2 features shipped: history CSV export + translation favorites/pin.
+- 2 new files: api/jobs/[id]/star/route.ts.
+- Modified: schema.prisma (+starred), job-repository.ts (+starred select +toggleStar +filter +orderBy), api/jobs/route.ts (+starred param), history-view.tsx (+StarButton +exportJobsAsCsv +CSV button +starred filter toggle +starred row styling +CSV starred column), dashboard-view.tsx (mesh-hero-animated), globals.css (+mesh-hero-animated keyframe).
+- No regressions. Lint clean. All features verified end-to-end.
+- Recommended next-round work: glossary auto-suggest from translation history, dark-mode visual QA, keyboard shortcut for "new session" in chat, starred-jobs widget on dashboard.

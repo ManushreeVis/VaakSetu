@@ -8,6 +8,7 @@ export interface JobRecord {
   kind: string;
   status: string;
   progress: number;
+  starred: boolean;
   sourceLang: string;
   targetLang: string;
   inputText: string | null;
@@ -34,6 +35,7 @@ const select = {
   kind: true,
   status: true,
   progress: true,
+  starred: true,
   sourceLang: true,
   targetLang: true,
   inputText: true,
@@ -58,10 +60,11 @@ const select = {
 export const JobRepository = {
   create: (data: Prisma.JobUncheckedCreateInput) => db.job.create({ data, select }),
   getById: (id: string) => db.job.findUnique({ where: { id }, select }),
-  list: (opts: { kind?: string; status?: string; q?: string; limit?: number } = {}) => {
+  list: (opts: { kind?: string; status?: string; q?: string; starred?: boolean; limit?: number } = {}) => {
     const where: Record<string, unknown> = {};
     if (opts.kind) where.kind = opts.kind;
     if (opts.status) where.status = opts.status;
+    if (opts.starred !== undefined) where.starred = opts.starred;
     if (opts.q) {
       where.OR = [
         { inputText: { contains: opts.q } },
@@ -72,13 +75,15 @@ export const JobRepository = {
     }
     return db.job.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ starred: "desc" }, { createdAt: "desc" }],
       take: opts.limit ?? 100,
       select,
     });
   },
   update: (id: string, data: Prisma.JobUncheckedUpdateInput) =>
     db.job.update({ where: { id }, data, select }),
+  toggleStar: (id: string, starred: boolean) =>
+    db.job.update({ where: { id }, data: { starred }, select }),
   remove: (id: string) => db.job.delete({ where: { id } }),
   countByStatus: () =>
     db.job.groupBy({ by: ["status"], _count: { _all: true } }),
