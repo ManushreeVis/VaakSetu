@@ -1,0 +1,157 @@
+// BhashaSetu — Offline Multilingual Translation Suite
+// Prisma schema (SQLite). Enum-like fields are String for SQLite compatibility.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// A single translation / transcription / summary / conversion job.
+model Job {
+  id          String   @id @default(cuid())
+  /// "text" | "media" | "summary" | "convert"
+  kind        String
+  /// "queued" | "running" | "completed" | "failed" | "canceled"
+  status      String   @default("queued")
+  progress    Int      @default(0)
+  /// Source language code: "mr" | "hi" | "en" | "auto"
+  sourceLang  String
+  /// Target language code: "mr" | "hi" | "en"
+  targetLang  String
+  /// Original input text (for text/summary jobs)
+  inputText   String?
+  /// Original uploaded file name (for media jobs)
+  inputName   String?
+  /// Stored path of the uploaded source media file
+  inputPath   String?
+  /// MIME / container hint, e.g. "video/mp4", "audio/wav"
+  inputMime   String?
+  /// Bytes of the uploaded file
+  inputSize   Int?
+  /// Transcribed source text (Whisper output)
+  transcript  String?
+  /// Final translated text (IndicTrans2 output)
+  outputText  String?
+  /// Stored path of the generated TTS audio (translated voice)
+  outputAudio String?
+  /// Generated subtitle content (SRT) for the target language
+  outputSrt   String?
+  /// Generated subtitle content (VTT) for the target language
+  outputVtt   String?
+  /// Optional summary text produced alongside
+  summary     String?
+  /// Model identifier selected/used, e.g. "indictrans2", "whisper-small"
+  model       String?
+  /// Why this model was auto-selected
+  modelReason String?
+  /// Error message when status = "failed"
+  error       String?
+  /// Duration of source media in seconds (media jobs)
+  durationSec Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([kind])
+  @@index([status])
+  @@index([createdAt])
+}
+
+/// A document-chat session (chat/voice with your document).
+model ChatSession {
+  id          String        @id @default(cuid())
+  title       String
+  /// Source language of the document: "mr" | "hi" | "en" | "auto"
+  sourceLang  String        @default("auto")
+  /// Language the assistant should reply in
+  targetLang  String        @default("en")
+  /// Pasted text or extracted document text used as context
+  documentText String?
+  /// Original uploaded document name
+  documentName String?
+  /// Stored path of the uploaded document
+  documentPath String?
+  /// Stored path of the last TTS reply audio
+  lastAudio   String?
+  messages    ChatMessage[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([createdAt])
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// "user" | "assistant"
+  role      String
+  content   String
+  /// Stored path of voice input (when user spoke)
+  audioPath String?
+  /// Stored path of TTS reply audio (when assistant spoke)
+  replyAudio String?
+  createdAt DateTime    @default(now())
+
+  @@index([sessionId])
+}
+
+/// A fine-tuning dataset of parallel sentence pairs.
+model FineTuneDataset {
+  id          String           @id @default(cuid())
+  name        String
+  /// Source language code
+  sourceLang  String
+  /// Target language code
+  targetLang  String
+  description String?
+  samples     FineTuneSample[]
+  jobs        FineTuneJob[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([sourceLang])
+  @@index([targetLang])
+}
+
+model FineTuneSample {
+  id        String          @id @default(cuid())
+  datasetId String
+  dataset   FineTuneDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  source    String
+  target    String
+  createdAt DateTime        @default(now())
+
+  @@index([datasetId])
+}
+
+/// A fine-tuning training job.
+model FineTuneJob {
+  id           String          @id @default(cuid())
+  datasetId    String
+  dataset      FineTuneDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  /// Base model to fine-tune, e.g. "indictrans2"
+  baseModel    String
+  /// "queued" | "running" | "completed" | "failed"
+  status       String          @default("queued")
+  progress     Int             @default(0)
+  epochs       Int             @default(3)
+  learningRate Float           @default(0.0001)
+  batchSize    Int             @default(16)
+  /// Path/identifier of the produced adapter or checkpoint
+  outputRef    String?
+  log          String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([status])
+}
+
+/// Key/value application + model configuration (model auto-select rules, defaults, etc.)
+model Setting {
+  key   String @id
+  value String
+}

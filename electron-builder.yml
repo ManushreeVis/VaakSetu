@@ -1,0 +1,50 @@
+# electron-builder configuration for BhashaSetu desktop packaging.
+# Produces a Windows installer (.exe) via `bun run dist` (see docs/BUILD.md).
+# NSIS installer + portable target; portable SQLite DB ships under userData.
+
+appId: org.baif.bhashasetu
+productName: BhashaSetu
+copyright: Copyright © 2025 BAIF · Tech for Good (open-source, MIT-licensed components)
+
+directories:
+  output: release
+  buildResources: electron/build
+
+files:
+  - electron/dist/**
+  - .next/standalone/**
+  - .next/static/**
+  - public/**
+  - package.json
+
+extraResources:
+  # Ship the open-source model weights alongside the app (on-prem, offline).
+  - from: models
+    to: models
+    filter: ["**/*"]
+
+asar: true
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  artifactName: BhashaSetu-${version}-${arch}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: BhashaSetu
+
+# macOS / Linux targets included for cross-platform on-prem deployment.
+mac:
+  target: [dmg]
+  category: public.app-category.productivity
+linux:
+  target: [AppImage, deb]
+  category: Office
