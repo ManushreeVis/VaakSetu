@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { LANGUAGE_LIST } from "@/lib/domain/languages";
 import { ALL_MEDIA_FORMATS } from "@/lib/domain/media-formats";
 import { ModelBadge } from "../shared/model-badge";
+import { ActivityChart } from "../shared/activity-chart";
 
 interface Stats {
   totalJobs: number;
@@ -34,6 +35,8 @@ interface Stats {
   fineTuneDatasets: number;
   fineTuneSamples: number;
   fineTuneJobsRunning: number;
+  glossaryCount?: number;
+  jobsPerDay?: { day: string; count: number }[];
 }
 
 interface JobSummary {
@@ -126,7 +129,7 @@ export function DashboardView() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard icon={CheckCircle2} label="Completed jobs" value={loading ? "—" : completed} hint="All-time" animateNumber={!loading} />
         <StatCard icon={History} label="Total jobs" value={loading ? "—" : stats?.totalJobs ?? 0} hint="History" accent="accent" animateNumber={!loading} />
-        <StatCard icon={Wand2} label="Fine-tune samples" value={loading ? "—" : stats?.fineTuneSamples ?? 0} hint={`${stats?.fineTuneDatasets ?? 0} datasets`} accent="muted" animateNumber={!loading} />
+        <StatCard icon={BookOpen} label="Glossary terms" value={loading ? "—" : stats?.glossaryCount ?? 0} hint="Domain terminology" accent="muted" animateNumber={!loading} />
         <StatCard icon={Cpu} label="Models available" value={5} hint="IndicTrans2 · Whisper · TTS · LLM" accent="accent" animateNumber />
       </div>
 
@@ -156,6 +159,9 @@ export function DashboardView() {
           })}
         </div>
       </section>
+
+      {/* Activity chart */}
+      {stats && <ActivityChart data={stats.jobsPerDay ?? []} />}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Recent jobs */}

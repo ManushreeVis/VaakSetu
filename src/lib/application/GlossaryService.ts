@@ -24,6 +24,21 @@ export interface AppliedGlossary {
   changed: boolean;
 }
 
+/** Escape a string for use in a RegExp (handles Devanagari + Latin). */
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Post-process a translation: for each glossary source term that appears in
+ * the source text, ensure the approved target appears in the translation.
+ *
+ * Strategy (safe for cross-script):
+ * 1. If the approved target is already present → no change, mark matched.
+ * 2. If the source term itself appears in the translation (model left it
+ *    untranslated) → replace it with the approved target.
+ * 3. Otherwise → append the glossary term as a parenthetical note on the
+ *    first occurrence, so the user sees the approved translation without
+ *    corrupting the model's output.
+ */
 export const GlossaryService = {
   list: GlossaryRepository.list,
   create: GlossaryRepository.create,
@@ -31,16 +46,6 @@ export const GlossaryService = {
   remove: GlossaryRepository.remove,
   count: GlossaryRepository.count,
 
-  /**
-   * Post-process a translation: replace any glossary source term's translation
-   * with the approved target. Case-insensitive source matching; replaces the
-   * first occurrence of each term's *translation* when the source term appears
-   * in the input.
-   *
-   * NOTE: In production with IndicTrans2, glossary terms would be fed as
-   * constraints to the decoder. This post-processing step is a pragmatic
-   * fallback for the demo adapter.
-   */
   async applyToTranslation(opts: {
     text: string;
     sourceText: string;
@@ -55,26 +60,37 @@ export const GlossaryService = {
     let result = opts.text;
     let changed = false;
     const matched: AppliedGlossary["matched"] = [];
+    const sourceLower = opts.sourceText.toLowerCase();
 
     for (const entry of entries) {
-      // Check if the source term appears in the source text (case-insensitive).
-      const sourceLower = opts.sourceText.toLowerCase();
       const termLower = entry.source.toLowerCase();
+      // Only act if the source term appears in the source text.
       if (!sourceLower.includes(termLower)) continue;
 
-      // If the translation does NOT already contain the approved target,
-      // we can't reliably do a word-level replace across scripts. Instead we
-      // append the glossary term as a parenthetical note on first occurrence
-      // only when the approved target is missing — this keeps the demo honest
-      // without corrupting translations.
       const alreadyPresent = result.includes(entry.target);
-      matched.push({ source: entry.source, expected: entry.target, applied: !alreadyPresent });
-      if (!alreadyPresent) {
-        // Append the glossary translation as a clarifying note the first time
-        // the term appears. This is a safe, visible intervention.
-        const idx = sourceLower.indexOf(termLower);
-        const snippet = opts.sourceText.slice(idx, idx + entry.source.length + 40);
-        void snippet; // reserved for future positional matching
+      if (alreadyPresent) {
+        matched.push({ source: entry.source, expected: entry.target, applied: false });
+        continue;
+      }
+
+      // Try replacing the untranslated source term in the output.
+      const sourcePattern = new RegExp(escapeRegExp(entry.source), "gi");
+      if (sourcePattern.test(result)) {
+        result = result.replace(sourcePattern, entry.target);
+        changed = true;
+        matched.push({ source: entry.source, expected: entry.target, applied: true });
+      } else {
+        // Can't locate the term in the output — append a clarifying note.
+        const note = ` (${entry.source}: ${entry.target})`;
+        // Append after the first sentence end, or at the end.
+        const sentenceEnd = result.search(/[।.!?]/);
+        if (sentenceEnd >= 0 && sentenceEnd < result.length - 1) {
+          result = result.slice(0, sentenceEnd + 1) + note + result.slice(sentenceEnd + 1);
+        } else {
+          result = result + note;
+        }
+        changed = true;
+        matched.push({ source: entry.source, expected: entry.target, applied: true });
       }
     }
 

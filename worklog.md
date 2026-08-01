@@ -331,3 +331,48 @@ Stage Summary:
 - No regressions. Lint clean. All features verified end-to-end.
 - NOTE on environment: background dev-server processes are killed between bash tool calls in this sandbox. Verification was done by starting the server and running all tests within a single bash command. The system-managed dev server will pick up the fixes on its next restart.
 - Recommended next-round work: integrate glossary into the translation pipeline (auto-apply on /api/translate), burned-in-caption export in media view, guided onboarding tour, dark-mode visual QA.
+
+---
+Task ID: R3
+Agent: webDevReview cron (round 3)
+Task: QA sweep (stable) → integrated glossary into translation pipeline + added dashboard activity chart + styling polish.
+
+Work Log:
+- Read worklog.md (round 2: 12 views, node: bug fixed, glossary feature shipped).
+- Agent-browser QA: page renders "BhashaSetu — भाषासेतु", all API routes 200, 0 console errors. Lint clean. Project stable.
+- Focused on completing the glossary feature's value loop + adding data visualization.
+
+FEATURE 1: Glossary integration into translation pipeline (completes R2's glossary feature)
+- Rewrote `GlossaryService.applyToTranslation()` with a real 3-strategy implementation:
+  1. If approved target already present → mark matched, no change.
+  2. If untranslated source term appears in output → replace it with the approved target (RegExp, case-insensitive, Devanagari-safe).
+  3. Otherwise → append "(source: target)" as a clarifying note at the first sentence boundary.
+- Integrated into `TextTranslator.run()`: after the translation engine returns, the glossary post-processor runs, the final text + modelReason (with "· glossary applied (N terms)") are persisted and returned.
+- Added `GlossaryApplied` + `GlossaryMatch` types to `src/lib/domain/types.ts`.
+- Updated `text-translate-view.tsx`: shows a glossary badge panel below the translation with color-coded matched terms (emerald=applied, muted=already-present) + checkmark icons.
+- Verified via curl: "Farmers can receive a subsidy for drip irrigation equipment." (en→hi) → translation includes "(drip irrigation: ठिबक सिंचन)" note, modelReason shows "glossary applied (1 term)", glossary.matched array returned with 2 entries.
+
+FEATURE 2: Dashboard activity chart (data visualization)
+- Enhanced `/api/stats` to return `jobsPerDay` (14-day array) via a SQLite `strftime` raw query, plus `glossaryCount`.
+- Created `src/components/app/shared/activity-chart.tsx` using recharts: 14-day bar chart with primary-color bars (muted for zero-days), tooltips, formatted x-axis dates, total count in header.
+- Added the chart to the dashboard between quick-actions and recent-jobs.
+- Replaced the "Fine-tune samples" stat card with "Glossary terms" (shows glossaryCount, more relevant to the new feature).
+
+STYLING POLISH:
+- Glossary badge panel: emerald badges for applied terms, muted for already-present, with BookOpen icon and checkmarks.
+- Activity chart: themed tooltips (popover/border colors), rounded bar corners, responsive container.
+- Stat cards now show "Glossary terms" with BookOpen icon.
+
+QA VERIFICATION:
+- Server returns 200, page renders "BhashaSetu".
+- Stats API: total=3 jobs, glossaryCount=2, jobsPerDay array length=14.
+- Translation + glossary golden path verified via curl: glossary terms matched and applied, modelReason updated, glossary.matched array returned.
+- Dashboard renders the recharts bar chart (`.recharts-bar-rectangles` present).
+- Lint clean. No "Module not found" or panic errors in dev.log.
+
+Stage Summary:
+- 2 features shipped: glossary pipeline integration (completes the glossary value loop) + dashboard activity chart.
+- 2 new files: shared/activity-chart.tsx, (GlossaryService rewritten).
+- Modified: TextTranslator.tsx (+glossary apply), domain/types.ts (+GlossaryApplied/GlossaryMatch), text-translate-view.tsx (+glossary badge), dashboard-view.tsx (+chart +glossary stat), api/stats/route.ts (+jobsPerDay +glossaryCount), GlossaryService.tsx (real implementation).
+- No regressions. Lint clean. All features verified.
+- Recommended next-round work: burned-in-caption export in media view, guided onboarding tour, glossary auto-suggest from translation history, dark-mode visual QA.

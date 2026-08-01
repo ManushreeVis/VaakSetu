@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Languages, ArrowRight, Copy, Check, Volume2, Loader2, Sparkles, RotateCcw } from "lucide-react";
+import { Languages, ArrowRight, Copy, Check, Volume2, Loader2, Sparkles, RotateCcw, BookOpen } from "lucide-react";
 import { ViewHeader } from "../shared/view-header";
 import { LanguageSelect } from "../shared/language-select";
 import { ModelBadge } from "../shared/model-badge";
@@ -15,11 +15,18 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useAppStore } from "../app-store";
 
+interface GlossaryMatch {
+  source: string;
+  expected: string;
+  applied: boolean;
+}
+
 interface TranslateResponse {
   text: string;
   model: string;
   modelReason: string;
   jobId: string;
+  glossary?: { matched: GlossaryMatch[]; changed: boolean };
 }
 
 const SAMPLES: Record<string, string> = {
@@ -187,6 +194,23 @@ export function TextTranslateView() {
             </div>
             {result?.modelReason && (
               <p className="text-[11px] text-muted-foreground">{result.modelReason}</p>
+            )}
+            {result?.glossary && result.glossary.matched.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 rounded-lg bg-primary/5 p-2">
+                <BookOpen className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[11px] font-medium text-primary">Glossary:</span>
+                {result.glossary.matched.map((m, i) => (
+                  <Badge
+                    key={i}
+                    variant="secondary"
+                    className={`gap-1 text-[10px] ${m.applied ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground"}`}
+                    title={m.applied ? `Applied: ${m.source} → ${m.expected}` : `Already present: ${m.expected}`}
+                  >
+                    {m.source} → {m.expected}
+                    {m.applied && <Check className="h-2.5 w-2.5" />}
+                  </Badge>
+                ))}
+              </div>
             )}
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" className="gap-1.5" onClick={copy} disabled={!result}>

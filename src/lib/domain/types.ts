@@ -11,11 +11,24 @@ export interface TranslationRequest {
   modelId?: string;
 }
 
+export interface GlossaryMatch {
+  source: string;
+  expected: string;
+  applied: boolean;
+}
+
+export interface GlossaryApplied {
+  matched: GlossaryMatch[];
+  changed: boolean;
+}
+
 export interface TranslationResult {
   text: string;
   model: string;
   modelReason: string;
   detectedSourceLang?: string;
+  /** Glossary terms that were matched/applied during post-processing. */
+  glossary?: GlossaryApplied;
 }
 
 export interface TranscriptionSegment {

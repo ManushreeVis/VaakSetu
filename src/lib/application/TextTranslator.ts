@@ -3,6 +3,7 @@
 import { aiEngines } from "@/lib/infrastructure/ai/zai-adapter";
 import { JobRepository } from "@/lib/infrastructure/repositories/job-repository";
 import { ModelSelector } from "./ModelSelector";
+import { GlossaryService, type AppliedGlossary } from "./GlossaryService";
 import type { TranslationRequest, TranslationResult } from "@/lib/domain/types";
 
 export interface BatchTranslationItem {
@@ -47,14 +48,31 @@ export const TextTranslator = {
         ...request,
         modelId: selection.modelId,
       });
+      // Apply glossary: enforce approved domain terminology.
+      const glossaryApplied = await GlossaryService.applyToTranslation({
+        text: result.text,
+        sourceText: request.text,
+        sourceLang: request.sourceLang,
+        targetLang: request.targetLang,
+      });
+      const finalText = glossaryApplied.text;
+      const modelReason = glossaryApplied.glossary.changed
+        ? `${result.modelReason} · glossary applied (${glossaryApplied.glossary.matched.filter((m) => m.applied).length} term${glossaryApplied.glossary.matched.filter((m) => m.applied).length === 1 ? "" : "s"})`
+        : result.modelReason;
       await JobRepository.update(job.id, {
         status: "completed",
         progress: 100,
-        outputText: result.text,
+        outputText: finalText,
         model: result.model,
-        modelReason: result.modelReason,
+        modelReason,
       });
-      return { ...result, jobId: job.id };
+      return {
+        ...result,
+        text: finalText,
+        modelReason,
+        jobId: job.id,
+        glossary: glossaryApplied.glossary,
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : "Translation failed.";
       await JobRepository.update(job.id, { status: "failed", error: message });
