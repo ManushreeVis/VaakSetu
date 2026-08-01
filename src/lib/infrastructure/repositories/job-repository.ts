@@ -9,6 +9,7 @@ export interface JobRecord {
   status: string;
   progress: number;
   starred: boolean;
+  rating: string | null;
   sourceLang: string;
   targetLang: string;
   inputText: string | null;
@@ -36,6 +37,7 @@ const select = {
   status: true,
   progress: true,
   starred: true,
+  rating: true,
   sourceLang: true,
   targetLang: true,
   inputText: true,
@@ -84,6 +86,8 @@ export const JobRepository = {
     db.job.update({ where: { id }, data, select }),
   toggleStar: (id: string, starred: boolean) =>
     db.job.update({ where: { id }, data: { starred }, select }),
+  setRating: (id: string, rating: string | null) =>
+    db.job.update({ where: { id }, data: { rating }, select }),
   remove: (id: string) => db.job.delete({ where: { id } }),
   countByStatus: () =>
     db.job.groupBy({ by: ["status"], _count: { _all: true } }),

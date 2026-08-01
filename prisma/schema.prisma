@@ -20,6 +20,8 @@ model Job {
   progress    Int      @default(0)
   /// User-starred (pinned) for quick access
   starred     Boolean  @default(false)
+  /// User quality rating: null = unrated, "up" = good, "down" = needs improvement
+  rating      String?
   /// Source language code: "mr" | "hi" | "en" | "auto"
   sourceLang  String
   /// Target language code: "mr" | "hi" | "en"

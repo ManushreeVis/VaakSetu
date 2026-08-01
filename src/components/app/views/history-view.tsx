@@ -20,6 +20,8 @@ import {
   Star,
   Columns2,
   RotateCw,
+  ThumbsUp,
+  ThumbsDown,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -126,12 +128,12 @@ const csvCell = (v: unknown): string => {
 /** Export an array of jobs as a CSV file (client-side Blob download). */
 const exportJobsAsCsv = (jobs: JobDto[]) => {
   const headers = [
-    "id", "kind", "status", "starred", "sourceLang", "targetLang",
+    "id", "kind", "status", "starred", "rating", "sourceLang", "targetLang",
     "inputName", "inputText", "transcript", "outputText", "summary",
     "model", "modelReason", "durationSec", "createdAt",
   ];
   const rows = jobs.map((j) => [
-    j.id, j.kind, j.status, j.starred ? "yes" : "no", j.sourceLang, j.targetLang,
+    j.id, j.kind, j.status, j.starred ? "yes" : "no", j.rating ?? "", j.sourceLang, j.targetLang,
     j.inputName ?? "", j.inputText ?? "", j.transcript ?? "", j.outputText ?? "", j.summary ?? "",
     j.model ?? "", j.modelReason ?? "", j.durationSec ?? "", j.createdAt,
   ]);
@@ -400,8 +402,13 @@ const JobDetailDialog = ({
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Downloads & actions
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <RetranslateButton job={job} />
+                  <RatingButtons
+                    jobId={job.id}
+                    rating={job.rating}
+                    onRated={() => window.dispatchEvent(new CustomEvent("job-deleted"))}
+                  />
                   {job.outputAudio && (
                     <Button asChild size="sm" variant="outline" className="gap-1.5">
                       <a
@@ -454,6 +461,66 @@ const JobDetailDialog = ({
         )}
       </DialogContent>
     </Dialog>
+  );
+};
+
+/** Thumbs-up / thumbs-down rating buttons. */
+const RatingButtons = ({
+  jobId,
+  rating,
+  onRated,
+}: {
+  jobId: string;
+  rating: string | null;
+  onRated: () => void;
+}) => {
+  const [busy, setBusy] = useState(false);
+
+  const rate = async (value: "up" | "down") => {
+    setBusy(true);
+    try {
+      // Toggle off if clicking the same rating.
+      const newRating = rating === value ? null : value;
+      const res = await fetch(`/api/jobs/${jobId}/rate`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating: newRating }),
+      });
+      if (!res.ok) throw new Error("Failed to rate");
+      toast.success(newRating ? `Marked as ${newRating === "up" ? "good" : "needs improvement"}` : "Rating cleared");
+      onRated();
+    } catch {
+      toast.error("Failed to update rating");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-0.5">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => rate("up")}
+        disabled={busy}
+        aria-label="Good translation"
+        title="Good translation"
+      >
+        <ThumbsUp className={`h-4 w-4 ${rating === "up" ? "fill-emerald-500 text-emerald-600" : "text-muted-foreground"}`} />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => rate("down")}
+        disabled={busy}
+        aria-label="Needs improvement"
+        title="Needs improvement"
+      >
+        <ThumbsDown className={`h-4 w-4 ${rating === "down" ? "fill-rose-500 text-rose-600" : "text-muted-foreground"}`} />
+      </Button>
+    </div>
   );
 };
 

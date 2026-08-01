@@ -598,3 +598,48 @@ Stage Summary:
 - Modified: history-view.tsx (+CompareView +RetranslateButton +Columns2/RotateCw icons +table-row-hover), shared/stat-card.tsx (card-lift), globals.css (+card-lift +skeleton-shimmer +table-row-hover).
 - No regressions. Lint clean. All features verified end-to-end.
 - Recommended next-round work: dark-mode visual QA, keyboard shortcut for "new session" in chat, glossary CSV import/export, translation quality rating.
+
+---
+Task ID: R8
+Agent: webDevReview cron (round 8)
+Task: QA sweep (stable) → added translation quality rating + glossary CSV import/export.
+
+Work Log:
+- Read worklog.md (round 7: 12 views, comparison view, re-translate, card-lift styling).
+- Curl QA: page renders "BhashaSetu", all APIs 200, 0 errors, lint clean. Project stable.
+
+FEATURE 1: Translation quality rating (thumbs up/down)
+- Schema: added `rating String?` to the Job model (null=unrated, "up"=good, "down"=needs improvement), pushed via db:push.
+- Repository: added `rating` to select + JobRecord, added `setRating(id, rating)` method.
+- API: created `PATCH /api/jobs/[id]/rate` with `{rating: "up"|"down"|null}` body → returns updated job.
+- UI (history-view.tsx):
+  * `RatingButtons` component: thumbs-up (emerald when active) + thumbs-down (rose when active) ghost icon buttons.
+  * Clicking the same rating toggles it off (sets to null).
+  * Added to the JobDetailDialog's "Downloads & actions" section.
+  * CSV export now includes the `rating` column.
+  * Added ThumbsUp/ThumbsDown icons to imports.
+- Verified via curl: PATCH rating:"up" → 200 + rating="up"; PATCH rating:null → 200 + rating=None.
+
+FEATURE 2: Glossary CSV import/export
+- Added `exportCsv()` function: RFC 4180 CSV with BOM, 6 columns (sourceLang, targetLang, source, target, category, note).
+- Added `importCsv()` function with a proper CSV parser (handles quoted fields, embedded commas, escaped quotes).
+  - Validates required columns (source, target); optional columns (sourceLang, targetLang, category, note) with defaults.
+  - Bulk-creates entries via POST /api/glossary, skips duplicates.
+  - Success toast with count.
+- Added "CSV" export button to the glossary header (alongside "JSON").
+- Added "Import CSV" option in the footer (alongside "Import JSON").
+- Added "Import CSV" button to the empty state (so users can import into an empty glossary).
+
+QA VERIFICATION:
+- Server returns 200, page renders "BhashaSetu".
+- All APIs return 200 (stats, jobs, glossary, models).
+- Rate API verified: rating:"up" → 200 + rating=up; rating:null → 200 + rating=None.
+- 0 errors in dev.log.
+- `bun run lint` clean.
+
+Stage Summary:
+- 2 features shipped: translation quality rating + glossary CSV import/export.
+- 1 new file: api/jobs/[id]/rate/route.ts.
+- Modified: schema.prisma (+rating), job-repository.ts (+rating select +setRating), history-view.tsx (+RatingButtons +ThumbsUp/ThumbsDown +rating in CSV), glossary-view.tsx (+exportCsv +importCsv +CSV button +Import CSV in footer +empty state).
+- No regressions. Lint clean. All features verified end-to-end.
+- Recommended next-round work: dark-mode visual QA, keyboard shortcut for "new session" in chat, rating summary on dashboard, glossary search-by-category.

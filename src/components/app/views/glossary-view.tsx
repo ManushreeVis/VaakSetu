@@ -148,6 +148,96 @@ export function GlossaryView() {
     }
   };
 
+  const csvCell = (v: unknown): string => {
+    const s = v == null ? "" : String(v);
+    if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  };
+
+  const exportCsv = () => {
+    const headers = ["sourceLang", "targetLang", "source", "target", "category", "note"];
+    const rows = entries.map((e) => [e.sourceLang, e.targetLang, e.source, e.target, e.category, e.note ?? ""]);
+    const csv = [headers, ...rows].map((r) => r.map(csvCell).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `glossary-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importCsv = async (file: File) => {
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      if (lines.length < 2) {
+        toast.error("CSV must have a header row + at least one data row.");
+        return;
+      }
+      // Simple CSV parser (handles quoted fields with embedded commas/newlines).
+      const parseRow = (line: string): string[] => {
+        const result: string[] = [];
+        let cur = "";
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (inQuotes) {
+            if (ch === '"') {
+              if (line[i + 1] === '"') { cur += '"'; i++; }
+              else inQuotes = false;
+            } else cur += ch;
+          } else {
+            if (ch === '"') inQuotes = true;
+            else if (ch === ",") { result.push(cur); cur = ""; }
+            else cur += ch;
+          }
+        }
+        result.push(cur);
+        return result;
+      };
+      const headers = parseRow(lines[0]).map((h) => h.trim().toLowerCase());
+      const srcIdx = headers.indexOf("source");
+      const tgtIdx = headers.indexOf("target");
+      const slIdx = headers.indexOf("sourcelang");
+      const tlIdx = headers.indexOf("targetlang");
+      const catIdx = headers.indexOf("category");
+      const noteIdx = headers.indexOf("note");
+      if (srcIdx < 0 || tgtIdx < 0) {
+        toast.error("CSV must have 'source' and 'target' columns.");
+        return;
+      }
+      let ok = 0;
+      let total = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseRow(lines[i]);
+        const source = cols[srcIdx]?.trim();
+        const target = cols[tgtIdx]?.trim();
+        if (!source || !target) continue;
+        total++;
+        const body: Record<string, unknown> = { source, target };
+        if (slIdx >= 0) body.sourceLang = cols[slIdx]?.trim() || "en";
+        if (tlIdx >= 0) body.targetLang = cols[tlIdx]?.trim() || "hi";
+        if (catIdx >= 0) body.category = cols[catIdx]?.trim() || "general";
+        if (noteIdx >= 0) body.note = cols[noteIdx]?.trim() || null;
+        try {
+          const res = await fetch("/api/glossary", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          if (res.ok) ok++;
+        } catch {
+          // skip duplicates / errors
+        }
+      }
+      toast.success(`Imported ${ok} of ${total} entries from CSV.`);
+      void load();
+    } catch {
+      toast.error("CSV import failed — invalid file.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <ViewHeader
@@ -160,8 +250,11 @@ export function GlossaryView() {
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowSuggest(true)}>
               <Sparkles className="h-3.5 w-3.5" /> Auto-suggest
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={exportJson} disabled={!entries.length}>
-              <Download className="h-3.5 w-3.5" /> Export
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={exportCsv} disabled={!entries.length} title="Export as CSV">
+              <Download className="h-3.5 w-3.5" /> CSV
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={exportJson} disabled={!entries.length} title="Export as JSON">
+              <Download className="h-3.5 w-3.5" /> JSON
             </Button>
             <Button size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}>
               <Plus className="h-3.5 w-3.5" /> Add term
@@ -219,9 +312,24 @@ export function GlossaryView() {
               title="No glossary entries yet"
               description="Add domain-specific terms to keep translations consistent — e.g. pin 'drip irrigation' → 'ठिबक सिंचन'."
               action={
-                <Button size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}>
-                  <Plus className="h-3.5 w-3.5" /> Add your first term
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}>
+                    <Plus className="h-3.5 w-3.5" /> Add your first term
+                  </Button>
+                  <label className="flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/60">
+                    <Upload className="h-3.5 w-3.5" /> Import CSV
+                    <input
+                      type="file"
+                      accept=".csv,text/csv"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void importCsv(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
               }
               className="border-0"
             />
@@ -281,19 +389,34 @@ export function GlossaryView() {
       {!loading && entries.length > 0 && (
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{entries.length} entr{entries.length === 1 ? "y" : "ies"}</span>
-          <label className="flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 hover:bg-muted/60">
-            <Upload className="h-3.5 w-3.5" /> Import JSON
-            <input
-              type="file"
-              accept="application/json"
-              className="sr-only"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void importJson(f);
-                e.target.value = "";
-              }}
-            />
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 hover:bg-muted/60">
+              <Upload className="h-3.5 w-3.5" /> Import CSV
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void importCsv(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            <label className="flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 hover:bg-muted/60">
+              <Upload className="h-3.5 w-3.5" /> Import JSON
+              <input
+                type="file"
+                accept="application/json"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void importJson(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
         </div>
       )}
 
