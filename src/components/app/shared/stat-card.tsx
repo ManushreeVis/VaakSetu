@@ -30,7 +30,7 @@ export function StatCard({ icon: Icon, label, value, hint, accent = "primary", c
   const display = isNumeric ? animated : value;
 
   return (
-    <Card className={cn("group overflow-hidden transition-shadow hover:shadow-md", className)}>
+    <Card className={cn("group card-lift overflow-hidden", className)}>
       <CardContent className="flex items-center gap-4 p-5">
         <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105", accentMap[accent])}>
           <Icon className="h-6 w-6" />

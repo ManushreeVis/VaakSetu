@@ -545,3 +545,56 @@ Stage Summary:
 - Modified: GlossaryService.ts (+suggestFromHistory +extractPhrases +findCorrespondingTarget), dashboard-view.tsx (+starred widget +Star icon +starred fetch), glossary-view.tsx (+SuggestDialog +Auto-suggest button +DialogDescription import), shared/empty-state.tsx (gradient + ping animation + larger icon).
 - No regressions. Lint clean. All features verified end-to-end.
 - Recommended next-round work: dark-mode visual QA, keyboard shortcut for "new session" in chat, translation comparison view (side-by-side), glossary suggest improvement with word-alignment.
+
+---
+Task ID: R7
+Agent: webDevReview cron (round 7)
+Task: QA sweep (stable) → added translation comparison view + re-translate action + card hover lift styling.
+
+Work Log:
+- Read worklog.md (round 6: 12 views, starred widget, glossary auto-suggest).
+- Curl QA: page renders "BhashaSetu", all APIs 200, 0 errors, lint clean. Project stable.
+
+FEATURE 1: Translation comparison view (side-by-side)
+- Created `CompareView` component in history-view.tsx:
+  - Splits source text (inputText or transcript) and translated output into sentences.
+  - Renders a 2-column grid: source (left) vs. translated (right), sentence-by-sentence.
+  - Alternating muted background on the target column for visual separation.
+  - Devanagari font + `lang` attribute applied to target column.
+  - Empty cells show "—" placeholder when sentence counts differ.
+  - Only renders when BOTH source text and output text exist (conditional).
+- Added to the JobDetailDialog between the output sections and model-reason section.
+
+FEATURE 2: Re-translate action (from history detail)
+- Created `RetranslateButton` component in history-view.tsx:
+  - Shows a "Re-translate" button (RotateCw icon) in the detail dialog's Downloads & actions area.
+  - Only available for text/summary jobs that have inputText.
+  - Opens a small dialog with 2 target-language buttons (the other languages besides the original target).
+  - POSTs to /api/translate with the original source text + new target language.
+  - On success: toast + dispatches "job-deleted" event to refresh the history list.
+  - Loading state on the Translate button.
+- Renamed the "Downloads" section to "Downloads & actions" to reflect the new action.
+- Verified via curl: POST /api/translate EN→MR produces valid Marathi ("कृषी भारतातील ग्रामीण भागाचा मागासवाड आहे.").
+
+STYLING POLISH:
+- Added 3 new CSS utility classes to globals.css:
+  * `.card-lift` — subtle translateY(-2px) + primary-tinted box-shadow on hover (cubic-bezier transition).
+  * `.skeleton-shimmer` — shimmering gradient background for skeleton loading placeholders.
+  * `.table-row-hover` — smooth background-color transition for table rows.
+- Applied `.card-lift` to StatCard (replaces the old `transition-shadow hover:shadow-md`).
+- Applied `.table-row-hover` to HistoryRow (replaces `hover:bg-muted/40` for smoother transition).
+- Added `Columns2` and `RotateCw` icons to imports.
+
+QA VERIFICATION:
+- Server returns 200, page renders "BhashaSetu".
+- All APIs return 200 (stats, jobs, glossary, models).
+- Re-translate verified: POST /api/translate EN→MR → valid Marathi translation.
+- 0 errors in dev.log.
+- `bun run lint` clean.
+
+Stage Summary:
+- 2 features shipped: translation comparison view + re-translate action.
+- 0 new files (components added to existing history-view.tsx).
+- Modified: history-view.tsx (+CompareView +RetranslateButton +Columns2/RotateCw icons +table-row-hover), shared/stat-card.tsx (card-lift), globals.css (+card-lift +skeleton-shimmer +table-row-hover).
+- No regressions. Lint clean. All features verified end-to-end.
+- Recommended next-round work: dark-mode visual QA, keyboard shortcut for "new session" in chat, glossary CSV import/export, translation quality rating.

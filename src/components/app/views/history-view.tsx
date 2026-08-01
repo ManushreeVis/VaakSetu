@@ -18,6 +18,8 @@ import {
   ArrowRight,
   Download,
   Star,
+  Columns2,
+  RotateCw,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -194,6 +196,134 @@ const TextDownloadButton = ({
   </Button>
 );
 
+/** Side-by-side comparison of source text vs. translated output. */
+const CompareView = ({ job }: { job: JobDto }) => {
+  const sourceText = job.inputText ?? job.transcript ?? "";
+  const targetText = job.outputText ?? "";
+  if (!sourceText || !targetText) return null;
+
+  const sourceSentences = sourceText.split(/(?<=[।.!?])\s+/).filter(Boolean);
+  const targetSentences = targetText.split(/(?<=[।.!?])\s+/).filter(Boolean);
+  const maxLines = Math.max(sourceSentences.length, targetSentences.length, 1);
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Side-by-side comparison
+      </p>
+      <div className="grid grid-cols-2 gap-2 rounded-lg border p-2">
+        <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground px-1">
+          {languageLabel(job.sourceLang)}
+        </div>
+        <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground px-1">
+          {languageLabel(job.targetLang)}
+        </div>
+        <div className="col-span-2 h-px bg-border" />
+        {Array.from({ length: maxLines }).map((_, i) => (
+          <div key={i} className="contents">
+            <div
+              className="rounded px-2 py-1.5 text-sm leading-relaxed"
+              lang={job.sourceLang === "auto" ? undefined : job.sourceLang}
+            >
+              {sourceSentences[i] ?? <span className="text-muted-foreground/40">—</span>}
+            </div>
+            <div
+              className="rounded bg-muted/30 px-2 py-1.5 text-sm leading-relaxed devanagari"
+              lang={job.targetLang}
+            >
+              {targetSentences[i] ?? <span className="text-muted-foreground/40">—</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/** Re-translate the source text into a different target language. */
+const RetranslateButton = ({ job }: { job: JobDto }) => {
+  const [open, setOpen] = useState(false);
+  const [target, setTarget] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const canRetranslate = (job.kind === "text" || job.kind === "summary") && job.inputText;
+
+  if (!canRetranslate) return null;
+
+  const run = async () => {
+    if (!target || !job.inputText) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: job.inputText,
+          sourceLang: job.sourceLang,
+          targetLang: target,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Re-translation failed");
+      toast.success(`Re-translated to ${target.toUpperCase()} — see History.`);
+      setOpen(false);
+      window.dispatchEvent(new CustomEvent("job-deleted"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Re-translation failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const targets = ["hi", "mr", "en"].filter((t) => t !== job.targetLang);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button
+        size="sm"
+        variant="outline"
+        className="gap-1.5"
+        onClick={() => setOpen(true)}
+      >
+        <RotateCw className="h-4 w-4" /> Re-translate
+      </Button>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <RotateCw className="h-4 w-4 text-primary" /> Re-translate
+          </DialogTitle>
+          <DialogDescription>
+            Translate the original source text into a different language. The new translation will appear in History.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 py-2">
+          <p className="text-xs text-muted-foreground">Translate to:</p>
+          <div className="flex gap-2">
+            {targets.map((t) => (
+              <Button
+                key={t}
+                variant={target === t ? "default" : "outline"}
+                size="sm"
+                className="flex-1"
+                onClick={() => setTarget(t)}
+              >
+                {t.toUpperCase()}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button size="sm" disabled={!target || busy} onClick={run} className="gap-1.5">
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+            Translate
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const JobDetailDialog = ({
   job,
   onClose,
@@ -253,6 +383,10 @@ const JobDetailDialog = ({
               {job.transcript && <Section label="Transcript (ASR)">{job.transcript}</Section>}
               {job.outputText && <Section label="Translated output">{job.outputText}</Section>}
               {job.summary && <Section label="Summary">{job.summary}</Section>}
+
+              {/* Side-by-side comparison (only when both source + output exist) */}
+              {job.inputText && job.outputText && <CompareView job={job} />}
+
               {job.modelReason && (
                 <Section label="Model selection reason">{job.modelReason}</Section>
               )}
@@ -264,9 +398,10 @@ const JobDetailDialog = ({
 
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Downloads
+                  Downloads & actions
                 </p>
                 <div className="flex flex-wrap gap-2">
+                  <RetranslateButton job={job} />
                   {job.outputAudio && (
                     <Button asChild size="sm" variant="outline" className="gap-1.5">
                       <a
@@ -430,7 +565,7 @@ const DeleteJobButton = ({
 };
 
 const HistoryRow = ({ job, onView }: { job: JobDto; onView: () => void }) => (
-  <TableRow className={`hover:bg-muted/40 ${job.starred ? "bg-amber-50/40 dark:bg-amber-950/10" : ""}`}>
+  <TableRow className={`table-row-hover ${job.starred ? "bg-amber-50/40 dark:bg-amber-950/10" : ""}`}>
     <TableCell>
       <div className="flex items-center gap-1.5">
         {job.starred && <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-500" />}
