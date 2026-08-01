@@ -1,5 +1,5 @@
 /**
- * Language registry for BhashaSetu.
+ * Language registry for VaakSetu.
  * Source languages (input): Marathi, Hindi, English (+ auto-detect).
  * Target languages (translated output): Marathi, Hindi, English.
  */

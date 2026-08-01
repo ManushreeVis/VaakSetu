@@ -1,4 +1,4 @@
-# BhashaSetu — Fine-tuning IndicTrans2
+# VaakSetu — Fine-tuning IndicTrans2
 
 This guide covers adapting **IndicTrans2** (AI4Bharat, MIT-licensed) to BAIF's domain
 (agriculture, rural development, extension vocabulary) using parallel sentence corpora.

@@ -728,3 +728,23 @@ Stage Summary:
 - Modified: history-view.tsx (+exportStarredBundle +Export starred button), text-translate-view.tsx (+word/char counts +read time), dashboard-view.tsx (bar-grow on quality bar), globals.css (+bar-grow keyframe).
 - No regressions. Lint clean. All features verified.
 - Recommended next-round work: dark-mode visual QA, translation comparison improvement with word-level diff, glossary bulk delete by category, dashboard "recent activity" time-range selector.
+
+---
+Task ID: R10-RENAME
+Agent: user request
+Task: Renamed project from "BhashaSetu" → "VaakSetu" (भाषासेतु → वाक्सेतु) across the entire codebase.
+
+Work Log:
+- Replaced "BhashaSetu" → "VaakSetu" across 28 files (source, docs, config, schema).
+- Replaced "bhashasetu" → "vaaksetu" (lowercase: localStorage keys, filenames, identifiers).
+- Replaced "भाषासेतु" → "वाक्सेतु" (Devanagari).
+- Replaced logo badge "भा" → "वा".
+- Replaced tagline "भाषांचा सेतु बांधणारा" → "वाणीचा सेतु बांधणारा".
+- Renamed internal CustomEvent names "bhasha:*" → "vaak:*".
+- Renamed localStorage key "bhashasetu:onboarded" → "vaaksetu:onboarded".
+- Verified: 0 occurrences of old name in source/docs (excluding historical worklog).
+- Lint clean. Server returns 200, page renders "VaakSetu" and "वाक्सेतु".
+
+Stage Summary:
+- Rename complete. All user-visible text, docs, schema, Electron config, and internal identifiers updated.
+- Note: historical worklog entries (R0–R10) retain the old name "BhashaSetu" as a historical record.

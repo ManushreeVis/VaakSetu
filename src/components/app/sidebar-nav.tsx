@@ -70,11 +70,11 @@ export function SidebarNav() {
         <div className="flex items-center justify-between gap-2 px-5 py-5" data-tour="brand">
           <div className="flex items-center gap-3">
             <div className="logo-shimmer flex h-10 w-10 items-center justify-center rounded-xl text-primary-foreground shadow-sm">
-              <span className="text-lg font-bold">भा</span>
+              <span className="text-lg font-bold">वा</span>
             </div>
             <div>
-              <p className="text-base font-semibold leading-tight">BhashaSetu</p>
-              <p className="text-[11px] text-muted-foreground devanagari">भाषासेतु · BAIF</p>
+              <p className="text-base font-semibold leading-tight">VaakSetu</p>
+              <p className="text-[11px] text-muted-foreground devanagari">वाक्सेतु · BAIF</p>
             </div>
           </div>
           <Button

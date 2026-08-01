@@ -1,4 +1,4 @@
-// BhashaSetu — Offline Multilingual Translation Suite
+// VaakSetu — Offline Multilingual Translation Suite
 // Prisma schema (SQLite). Enum-like fields are String for SQLite compatibility.
 
 generator client {

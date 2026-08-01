@@ -172,7 +172,7 @@ const PreferencesCard = () => {
             variant="outline"
             size="sm"
             className="gap-1.5"
-            onClick={() => window.dispatchEvent(new CustomEvent("bhasha:restart-tour"))}
+            onClick={() => window.dispatchEvent(new CustomEvent("vaak:restart-tour"))}
           >
             <Sparkles className="h-3.5 w-3.5" /> Restart tour
           </Button>
@@ -226,12 +226,12 @@ const AboutCard = () => (
     <CardContent className="space-y-4">
       <div>
         <p className="text-lg font-semibold tracking-tight">
-          BhashaSetu · <span className="devanagari text-primary">भाषासेतु</span>
+          VaakSetu · <span className="devanagari text-primary">वाक्सेतु</span>
         </p>
         <p className="text-xs text-muted-foreground">Version 1.0 · Tech for Good Hackathon</p>
       </div>
       <p className="text-sm text-muted-foreground">
-        BhashaSetu is an offline multilingual translation suite that bridges Marathi, Hindi and
+        VaakSetu is an offline multilingual translation suite that bridges Marathi, Hindi and
         English across text, audio and video — built so field workers and extension officers can
         communicate without depending on cloud services or paid APIs.
       </p>

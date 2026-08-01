@@ -1,8 +1,8 @@
-# BhashaSetu — Architecture
+# VaakSetu — Architecture
 
-> भाषासेतु · Offline multilingual translation suite for BAIF · Tech for Good Hackathon
+> वाक्सेतु · Offline multilingual translation suite for BAIF · Tech for Good Hackathon
 
-BhashaSetu accepts **text, audio and video** inputs, transcribes any speech, translates between
+VaakSetu accepts **text, audio and video** inputs, transcribes any speech, translates between
 **Marathi, Hindi and English**, and produces **translated text, translated voice (TTS) and video
 subtitles (SRT/VTT)** — entirely on-premises with open-source models.
 

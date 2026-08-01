@@ -117,9 +117,9 @@ export function DashboardView() {
             <Sparkles className="h-3 w-3" /> Tech for Good · BAIF
           </Badge>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            BhashaSetu — <span className="devanagari text-primary">भाषासेतु</span>
+            VaakSetu — <span className="devanagari text-primary">वाक्सेतु</span>
           </h1>
-          <p className="mt-1 text-sm font-medium text-primary devanagari">भाषांचा सेतु बांधणारा</p>
+          <p className="mt-1 text-sm font-medium text-primary devanagari">वाणीचा सेतु बांधणारा</p>
           <p className="mt-3 text-sm text-muted-foreground sm:text-base">
             Transcribe, translate and voice <strong>Marathi</strong>, <strong>Hindi</strong> and{" "}
             <strong>English</strong> from text, audio and video — entirely on-premises with

@@ -1,5 +1,5 @@
 /**
- * BhashaSetu — Electron main process.
+ * VaakSetu — Electron main process.
  *
  * Packages the Next.js standalone server into a desktop application (.exe on Windows).
  * On launch it starts the bundled Node server on a free localhost port and opens a
@@ -41,7 +41,7 @@ const createWindow = async () => {
     minWidth: 1024,
     minHeight: 640,
     backgroundColor: "#0f1a16",
-    title: "BhashaSetu",
+    title: "VaakSetu",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

@@ -1,5 +1,5 @@
 /**
- * BhashaSetu — Electron preload.
+ * VaakSetu — Electron preload.
  * Exposes a minimal, safe bridge to the renderer (currently read-only app metadata).
  */
 import { contextBridge } from "electron";

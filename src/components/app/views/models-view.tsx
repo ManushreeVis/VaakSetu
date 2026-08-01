@@ -310,7 +310,7 @@ export function ModelsView() {
         icon={Cpu}
         title="Models & Auto-Select"
         nativeTitle="प्रारूपे व स्वयंचलित निवड"
-        subtitle="Open-source models powering BhashaSetu — and the auto-selection logic that picks the best one."
+        subtitle="Open-source models powering VaakSetu — and the auto-selection logic that picks the best one."
       />
 
       <Card className="border-emerald-500/30 bg-emerald-500/[0.04]">

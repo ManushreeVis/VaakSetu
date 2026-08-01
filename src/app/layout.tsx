@@ -21,11 +21,11 @@ const notoDevanagari = Noto_Sans_Devanagari({
 });
 
 export const metadata: Metadata = {
-  title: "BhashaSetu — Offline Multilingual Translation Suite",
+  title: "VaakSetu — Offline Multilingual Translation Suite",
   description:
-    "BhashaSetu (भाषासेतु) is an offline-capable translation suite for BAIF: transcribe, translate and voice Marathi, Hindi & English from text, audio and video — fully on-premises with open-source models.",
+    "VaakSetu (वाक्सेतु) is an offline-capable translation suite for BAIF: transcribe, translate and voice Marathi, Hindi & English from text, audio and video — fully on-premises with open-source models.",
   keywords: [
-    "BhashaSetu",
+    "VaakSetu",
     "BAIF",
     "IndicTrans2",
     "Marathi translation",
@@ -35,12 +35,12 @@ export const metadata: Metadata = {
     "subtitles",
     "open-source NLP",
   ],
-  authors: [{ name: "BhashaSetu — Tech for Good" }],
+  authors: [{ name: "VaakSetu — Tech for Good" }],
   icons: {
     icon: "/logo.svg",
   },
   openGraph: {
-    title: "BhashaSetu — Offline Multilingual Translation Suite",
+    title: "VaakSetu — Offline Multilingual Translation Suite",
     description: "Transcribe, translate & voice Marathi, Hindi & English — fully on-prem, open-source.",
     type: "website",
   },

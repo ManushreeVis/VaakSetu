@@ -54,7 +54,7 @@ export function useKeyboardShortcuts() {
 
       if (key === "?") {
         e.preventDefault();
-        window.dispatchEvent(new CustomEvent("bhasha:toggle-shortcuts"));
+        window.dispatchEvent(new CustomEvent("vaak:toggle-shortcuts"));
         return;
       }
 

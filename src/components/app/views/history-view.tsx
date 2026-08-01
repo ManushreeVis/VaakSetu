@@ -142,7 +142,7 @@ const exportJobsAsCsv = (jobs: JobDto[]) => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `bhashasetu-history-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `vaaksetu-history-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -154,7 +154,7 @@ const exportStarredBundle = (jobs: JobDto[]) => {
   const starred = jobs.filter((j) => j.starred);
   if (starred.length === 0) return;
   const lines: string[] = [
-    "BhashaSetu — Starred Translations Bundle",
+    "VaakSetu — Starred Translations Bundle",
     `Generated: ${new Date().toISOString()}`,
     `Total entries: ${starred.length}`,
     "=".repeat(60),
@@ -195,7 +195,7 @@ const exportStarredBundle = (jobs: JobDto[]) => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `bhashasetu-starred-${new Date().toISOString().slice(0, 10)}.txt`;
+  a.download = `vaaksetu-starred-${new Date().toISOString().slice(0, 10)}.txt`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

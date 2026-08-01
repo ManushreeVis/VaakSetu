@@ -38,8 +38,8 @@ export function ShortcutsHelp() {
 
   useEffect(() => {
     const onToggle = () => setOpen((o) => !o);
-    window.addEventListener("bhasha:toggle-shortcuts", onToggle);
-    return () => window.removeEventListener("bhasha:toggle-shortcuts", onToggle);
+    window.addEventListener("vaak:toggle-shortcuts", onToggle);
+    return () => window.removeEventListener("vaak:toggle-shortcuts", onToggle);
   }, []);
 
   return (
@@ -50,7 +50,7 @@ export function ShortcutsHelp() {
             <Keyboard className="h-5 w-5 text-primary" /> Keyboard shortcuts
           </DialogTitle>
           <DialogDescription>
-            Power-user navigation for BhashaSetu. Press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">?</kbd> anytime to reopen this.
+            Power-user navigation for VaakSetu. Press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">?</kbd> anytime to reopen this.
           </DialogDescription>
         </DialogHeader>
         <div className="mt-2 grid grid-cols-1 gap-1.5">

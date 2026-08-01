@@ -68,10 +68,10 @@ export function CommandPalette() {
     };
     const onToggle = () => setOpen((o) => !o);
     window.addEventListener("keydown", onKey);
-    window.addEventListener("bhasha:toggle-palette", onToggle);
+    window.addEventListener("vaak:toggle-palette", onToggle);
     return () => {
       window.removeEventListener("keydown", onKey);
-      window.removeEventListener("bhasha:toggle-palette", onToggle);
+      window.removeEventListener("vaak:toggle-palette", onToggle);
     };
   }, []);
 
@@ -113,7 +113,7 @@ export function CommandPalette() {
   const actionItems = useMemo<PaletteItem[]>(
     () => [
       { id: "act-open-sidebar", label: "Open navigation menu (mobile)", icon: Search, group: "Actions", run: () => { setSidebarOpen(true); setOpen(false); } },
-      { id: "act-restart-tour", label: "Restart guided tour", icon: Sparkles, group: "Actions", run: () => { window.dispatchEvent(new CustomEvent("bhasha:restart-tour")); setOpen(false); } },
+      { id: "act-restart-tour", label: "Restart guided tour", icon: Sparkles, group: "Actions", run: () => { window.dispatchEvent(new CustomEvent("vaak:restart-tour")); setOpen(false); } },
     ],
     [setSidebarOpen],
   );
@@ -122,7 +122,7 @@ export function CommandPalette() {
     <CommandDialog
       open={open}
       onOpenChange={setOpen}
-      title="BhashaSetu command palette"
+      title="VaakSetu command palette"
       description="Search views, recent jobs and quick actions. Press ⌘K to toggle."
       className="max-w-xl"
     >
@@ -175,7 +175,7 @@ export function CommandPalette() {
                     onSelect={() => {
                       go("history");
                       // Allow the history view to optionally react.
-                      window.dispatchEvent(new CustomEvent("bhasha:focus-job", { detail: job.id }));
+                      window.dispatchEvent(new CustomEvent("vaak:focus-job", { detail: job.id }));
                     }}
                   >
                     <History className="h-4 w-4 text-muted-foreground" />

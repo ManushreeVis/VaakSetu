@@ -1,5 +1,5 @@
 /**
- * Model registry + selection metadata for BhashaSetu.
+ * Model registry + selection metadata for VaakSetu.
  *
  * Production uses open-source models only (no licensing/usage cost), running on-prem:
  *  - Translation: IndicTrans2 (AI4Bharat)

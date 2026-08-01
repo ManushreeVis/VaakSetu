@@ -66,7 +66,7 @@ export function AppShell() {
                 variant="outline"
                 size="sm"
                 className="hidden h-8 gap-2 sm:flex"
-                onClick={() => window.dispatchEvent(new CustomEvent("bhasha:toggle-shortcuts"))}
+                onClick={() => window.dispatchEvent(new CustomEvent("vaak:toggle-shortcuts"))}
               >
                 <Keyboard className="h-3.5 w-3.5" />
                 <kbd className="font-mono text-[11px]">?</kbd>
@@ -76,7 +76,7 @@ export function AppShell() {
                 size="sm"
                 className="h-8 gap-2"
                 data-tour="palette-btn"
-                onClick={() => window.dispatchEvent(new CustomEvent("bhasha:toggle-palette"))}
+                onClick={() => window.dispatchEvent(new CustomEvent("vaak:toggle-palette"))}
               >
                 <Search className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Search</span>
@@ -114,7 +114,7 @@ export function AppShell() {
             <OnboardingTour />
             <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center">
               <p>
-                <span className="font-medium text-foreground">BhashaSetu</span> · भाषासेतु —
+                <span className="font-medium text-foreground">VaakSetu</span> · वाक्सेतु —
                 Offline multilingual translation suite for BAIF · Built with open-source models
                 (IndicTrans2 · Whisper · AI4Bharat TTS).
               </p>

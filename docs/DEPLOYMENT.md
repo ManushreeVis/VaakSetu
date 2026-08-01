@@ -1,6 +1,6 @@
-# BhashaSetu — On-Premises Deployment Guide
+# VaakSetu — On-Premises Deployment Guide
 
-BhashaSetu runs **entirely on BAIF's on-premises infrastructure** (file server and/or standalone
+VaakSetu runs **entirely on BAIF's on-premises infrastructure** (file server and/or standalone
 machines). No data leaves the network; no external services are used; all models are open-source
 (MIT) with no licensing or usage cost. It is developed and deployed **outside HSBC** with no
 dependency on HSBC systems.
@@ -27,7 +27,7 @@ CPU-only operation is supported (Whisper-small + IndicTrans2 CPU). GPU accelerat
 
 ```bash
 # On the on-prem machine (no internet needed after initial model download)
-git clone <internal-clone-url> bhashasetu && cd bhashasetu
+git clone <internal-clone-url> vaaksetu && cd vaaksetu
 bun install            # or npm ci
 cp .env.example .env   # set DATABASE_URL, MODEL_CACHE_DIR, etc.
 bun run db:push        # create the SQLite schema
@@ -100,7 +100,7 @@ bun run build
 bun run start            # listens on 127.0.0.1:3000
 
 # Or run the desktop build (see BUILD.md) for standalone machines
-bun run dist             # → release/BhashaSetu-Setup-1.0.0.exe
+bun run dist             # → release/VaakSetu-Setup-1.0.0.exe
 ```
 
 For multi-user shared deployments, front it with **Caddy/nginx** on the file server and serve over

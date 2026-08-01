@@ -1,9 +1,9 @@
-# electron-builder configuration for BhashaSetu desktop packaging.
+# electron-builder configuration for VaakSetu desktop packaging.
 # Produces a Windows installer (.exe) via `bun run dist` (see docs/BUILD.md).
 # NSIS installer + portable target; portable SQLite DB ships under userData.
 
-appId: org.baif.bhashasetu
-productName: BhashaSetu
+appId: org.baif.vaaksetu
+productName: VaakSetu
 copyright: Copyright © 2025 BAIF · Tech for Good (open-source, MIT-licensed components)
 
 directories:
@@ -31,7 +31,7 @@ win:
       arch: [x64]
     - target: portable
       arch: [x64]
-  artifactName: BhashaSetu-${version}-${arch}.${ext}
+  artifactName: VaakSetu-${version}-${arch}.${ext}
 
 nsis:
   oneClick: false
@@ -39,7 +39,7 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: BhashaSetu
+  shortcutName: VaakSetu
 
 # macOS / Linux targets included for cross-platform on-prem deployment.
 mac:

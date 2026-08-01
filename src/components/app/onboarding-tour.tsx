@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { SpotlightTour } from "./spotlight-tour";
 
-const STORAGE_KEY = "bhashasetu:onboarded";
+const STORAGE_KEY = "vaaksetu:onboarded";
 
 const STEPS = [
   {
-    title: "स्वागत! Welcome to BhashaSetu",
-    body: "भाषासेतु — an offline-capable translation suite for BAIF. Transcribe, translate and voice Marathi, Hindi & English from text, audio and video. Let's take a quick tour.",
+    title: "स्वागत! Welcome to VaakSetu",
+    body: "वाक्सेतु — an offline-capable translation suite for BAIF. Transcribe, translate and voice Marathi, Hindi & English from text, audio and video. Let's take a quick tour.",
     selector: '[data-tour="brand"]',
   },
   {
@@ -18,7 +18,7 @@ const STEPS = [
   },
   {
     title: "Audio & Video translation",
-    body: "Upload a video or audio file — BhashaSetu transcribes the speech, translates it, and generates subtitles + a translated voice-over. You can even burn captions directly into the video.",
+    body: "Upload a video or audio file — VaakSetu transcribes the speech, translates it, and generates subtitles + a translated voice-over. You can even burn captions directly into the video.",
     selector: '[data-tour="nav-media"]',
   },
   {
@@ -96,8 +96,8 @@ interface SpotlightStep {
 const RestartHook = ({ onRestart }: { onRestart: () => void }) => {
   useEffect(() => {
     const handler = () => onRestart();
-    window.addEventListener("bhasha:restart-tour", handler);
-    return () => window.removeEventListener("bhasha:restart-tour", handler);
+    window.addEventListener("vaak:restart-tour", handler);
+    return () => window.removeEventListener("vaak:restart-tour", handler);
   }, [onRestart]);
   return null;
 };

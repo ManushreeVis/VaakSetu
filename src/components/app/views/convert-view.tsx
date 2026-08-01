@@ -24,7 +24,7 @@ interface AudioResult { jobId: string; outputPath: string; downloadName: string;
 const SAMPLE_SRT =
   "1\n" +
   "00:00:00,500 --> 00:00:03,200\n" +
-  "Hello, welcome to the BhashaSetu demo.\n\n" +
+  "Hello, welcome to the VaakSetu demo.\n\n" +
   "2\n" +
   "00:00:03,400 --> 00:00:06,000\n" +
   "This tool translates Marathi, Hindi, and English.\n\n" +

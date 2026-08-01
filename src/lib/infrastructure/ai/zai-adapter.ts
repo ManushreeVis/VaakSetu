@@ -1,5 +1,5 @@
 /**
- * ZAI-backed implementation of the BhashaSetu engine contracts.
+ * ZAI-backed implementation of the VaakSetu engine contracts.
  *
  * This adapter powers the sandbox demo using `z-ai-web-dev-sdk` (LLM, ASR, TTS, vision).
  * It is the *only* module that knows about the ZAI SDK — the rest of the app talks to the
@@ -178,7 +178,7 @@ const ZaiLlmEngine: LlmEngine = {
       ? `Reply in ${tgt.name} (${tgt.nativeName}). `
       : "";
     const system =
-      `You are BhashaSetu Assistant, an offline document-QA helper for BAIF field staff. ` +
+      `You are VaakSetu Assistant, an offline document-QA helper for BAIF field staff. ` +
       `Answer the user's question using ONLY the provided document context. ${langInstruction}` +
       `If the answer is not in the context, say so briefly in the reply language. Be concise, ` +
       `practical and faithful to the source.`;

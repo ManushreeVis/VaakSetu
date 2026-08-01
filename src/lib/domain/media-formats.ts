@@ -1,5 +1,5 @@
 /**
- * Supported media formats for BhashaSetu.
+ * Supported media formats for VaakSetu.
  * Video: MP4, MOV, AVI, WMV, MKV, FLV, WebM
  * Audio: MP3, WAV, AAC, M4A, FLAC, WMA, OGG
  */

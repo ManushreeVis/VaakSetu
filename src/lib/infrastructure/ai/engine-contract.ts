@@ -1,5 +1,5 @@
 /**
- * Engine contracts (ports) for BhashaSetu.
+ * Engine contracts (ports) for VaakSetu.
  *
  * The application layer depends only on these interfaces. The concrete implementation in
  * `zai-adapter.ts` backs the demo with z-ai-web-dev-sdk. A production deployment ships an
