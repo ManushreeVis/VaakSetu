@@ -230,3 +230,53 @@ Stage Summary:
 - Recommended next steps for the webDevReview cron: polish micro-interactions, add batch
   translation, burned-in-caption export in media view, keyboard shortcuts, and a guided onboarding
   tour.
+
+---
+Task ID: R1
+Agent: webDevReview cron (round 1)
+Task: QA sweep + add high-value features (command palette, keyboard shortcuts, animated counters, batch translation) + visual polish.
+
+Work Log:
+- Read worklog.md — confirmed project stable & complete (8/8 requirements + 10 views, 0 errors in prior round).
+- Agent-browser QA: opened localhost:3000, swept all 10 views → 0 console errors, 0 runtime errors. Lint clean.
+- Decided to advance NEW features + styling polish (project stable).
+
+NEW FEATURES added:
+1. **Command Palette (⌘K / Ctrl+K)** — `src/components/app/command-palette.tsx`
+   - View navigation (all 11 views) with native-language hints + shortcut badges.
+   - Quick actions group.
+   - Recent-jobs search (fetches /api/jobs?limit=6 on open, fuzzy match via cmdk).
+   - Header "Search ⌘K" button + global keydown listener + custom-event toggle.
+2. **Keyboard shortcuts (vim-style `g` + letter)** — `src/components/app/use-keyboard-shortcuts.ts`
+   - g d/t/b/m/c/s/f/h/o/n/,  → 11 views. 800ms window, ignores typing in inputs.
+   - `?` toggles a shortcuts-help Dialog.
+3. **Shortcuts help dialog** — `src/components/app/shortcuts-help.tsx` (lists all 12 shortcuts).
+4. **Animated stat counters** — `src/components/app/shared/use-count-up.ts` (rAF ease-out cubic) + StatCard `animateNumber` prop; dashboard stats now count up from 0 on load.
+5. **Batch Translation** (new view + API) — `src/components/app/views/batch-translate-view.tsx` + `POST /api/translate/batch` + `TextTranslator.runBatch()`:
+   - Translate up to 200 lines at once (one translation per non-empty line).
+   - Results table (#, source, translation) with succeeded/failed summary strip.
+   - Per-line error handling (failed rows show error inline, don't abort the batch).
+   - Copy-all + CSV export. Persisted as a single history Job (kind=text, modelReason notes "batch · N/M ok").
+   - Added to sidebar, command palette (g b), keyboard shortcuts, and dashboard quick-actions.
+
+STYLING POLISH:
+- StatCard: hover shadow + icon scale-up micro-interaction + tabular-nums.
+- Header: pulsing "IndicTrans2 ready" live dot (`.pulse-dot` keyframe in globals.css).
+- Global: subtle view-fade-in animation on `main > div` (0.32s cubic-bezier), stronger `:focus-visible` outline for keyboard users.
+- Header buttons: Search (⌘K) + Shortcuts (?) with `<kbd>` badges.
+
+QA VERIFICATION (agent-browser):
+- All 11 views render with 0 console errors (full sweep).
+- Command palette: ⌘K opens, fuzzy search filters (typing "history" → only History item), recent-jobs group appears.
+- Keyboard shortcuts: `g h` → History, `g d` → Dashboard, `g b` → Batch, all verified.
+- `?` opens shortcuts help dialog.
+- Batch golden path: 5 English sample lines → 5 valid Hindi translations (e.g. "Farmers can receive subsidies for drip irrigation equipment." → "किसानों को ड्रिप सिंचाई उपकरणों के लिए सब्सिडी प्राप्त कर सकते हैं।"). CSV button present. Job persisted to history.
+- Mobile (390×844): layout responsive, mobile menu button present.
+- `bun run lint` clean. Dev server compiles all routes (200s).
+
+Stage Summary:
+- 4 new features + 1 new view shipped and verified end-to-end. View count 10 → 11.
+- No regressions: all prior features still work, 0 errors across the app.
+- Files added: command-palette.tsx, use-keyboard-shortcuts.ts, shortcuts-help.tsx, shared/use-count-up.ts, views/batch-translate-view.tsx, api/translate/batch/route.ts.
+- Files modified: app-shell.tsx (palette+shortcuts+batch wiring, header buttons, pulse dot), sidebar-nav.tsx (+Batch item), command-palette.tsx (+Batch), use-keyboard-shortcuts.ts (+b), shortcuts-help.tsx (+g b), shared/stat-card.tsx (animateNumber + hover), views/dashboard-view.tsx (animateNumber + Batch quick-action), application/TextTranslator.tsx (+runBatch), globals.css (view-fade-in, pulse-dot, focus-visible).
+- Recommended next-round work: burned-in-caption export in media view, guided onboarding tour, dark-mode QA pass, accessibility audit (ARIA), more keyboard shortcuts (e.g. `n` for new session in chat).

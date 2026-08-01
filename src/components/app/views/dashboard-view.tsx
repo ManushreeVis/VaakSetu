@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   Languages,
+  Layers,
   Clapperboard,
   MessagesSquare,
   ScrollText,
@@ -49,6 +50,7 @@ interface JobSummary {
 
 const QUICK_ACTIONS: { view: ViewId; icon: typeof Languages; label: string; native: string; desc: string }[] = [
   { view: "text", icon: Languages, label: "Translate Text", native: "मजकूर", desc: "Marathi · Hindi · English" },
+  { view: "batch", icon: Layers, label: "Batch Translate", native: "साखळी", desc: "Many lines at once → CSV" },
   { view: "media", icon: Clapperboard, label: "Translate Audio / Video", native: "ध्वनी / व्हिडिओ", desc: "Speech → text → voice + subtitles" },
   { view: "chat", icon: MessagesSquare, label: "Chat with Document", native: "दस्तऐवज", desc: "Ask questions, by voice or text" },
   { view: "summary", icon: ScrollText, label: "Summarize", native: "सारांश", desc: "Any language, bullets or paragraph" },
@@ -120,10 +122,10 @@ export function DashboardView() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard icon={CheckCircle2} label="Completed jobs" value={loading ? "—" : completed} hint="All-time" />
-        <StatCard icon={History} label="Total jobs" value={loading ? "—" : stats?.totalJobs ?? 0} hint="History" accent="accent" />
-        <StatCard icon={Wand2} label="Fine-tune samples" value={loading ? "—" : stats?.fineTuneSamples ?? 0} hint={`${stats?.fineTuneDatasets ?? 0} datasets`} accent="muted" />
-        <StatCard icon={Cpu} label="Models available" value={5} hint="IndicTrans2 · Whisper · TTS · LLM" accent="accent" />
+        <StatCard icon={CheckCircle2} label="Completed jobs" value={loading ? "—" : completed} hint="All-time" animateNumber={!loading} />
+        <StatCard icon={History} label="Total jobs" value={loading ? "—" : stats?.totalJobs ?? 0} hint="History" accent="accent" animateNumber={!loading} />
+        <StatCard icon={Wand2} label="Fine-tune samples" value={loading ? "—" : stats?.fineTuneSamples ?? 0} hint={`${stats?.fineTuneDatasets ?? 0} datasets`} accent="muted" animateNumber={!loading} />
+        <StatCard icon={Cpu} label="Models available" value={5} hint="IndicTrans2 · Whisper · TTS · LLM" accent="accent" animateNumber />
       </div>
 
       {/* Quick actions */}

@@ -5,6 +5,7 @@ import { create } from "zustand";
 export type ViewId =
   | "dashboard"
   | "text"
+  | "batch"
   | "media"
   | "chat"
   | "summary"

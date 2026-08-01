@@ -173,3 +173,29 @@
   background-size: 200% 100%;
   animation: shimmer 6s linear infinite;
 }
+
+/* Subtle entrance animation for view content (applied by main > div). */
+@keyframes view-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+main > div {
+  animation: view-fade-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Pulsing live indicator dot */
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 50%, transparent); }
+  70%  { box-shadow: 0 0 0 6px color-mix(in oklch, var(--primary) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 0%, transparent); }
+}
+.pulse-dot {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Better focus visibility for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+

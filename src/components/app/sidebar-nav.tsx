@@ -3,6 +3,7 @@
 import {
   LayoutDashboard,
   Languages,
+  Layers,
   Clapperboard,
   MessagesSquare,
   ScrollText,
@@ -31,6 +32,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { id: "dashboard", label: "Dashboard", native: "डॅशबोर्ड", icon: LayoutDashboard, group: "Workspace" },
   { id: "text", label: "Text Translate", native: "मजकूर भाषांतर", icon: Languages, group: "Tools" },
+  { id: "batch", label: "Batch Translate", native: "साखळी भाषांतर", icon: Layers, group: "Tools" },
   { id: "media", label: "Audio / Video", native: "ध्वनी / व्हिडिओ", icon: Clapperboard, group: "Tools" },
   { id: "chat", label: "Chat with Document", native: "दस्तऐवजाशी संभाषण", icon: MessagesSquare, group: "Tools" },
   { id: "summary", label: "Summary", native: "सारांश", icon: ScrollText, group: "Tools" },
