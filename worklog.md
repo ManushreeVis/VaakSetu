@@ -488,3 +488,60 @@ Stage Summary:
 - Modified: schema.prisma (+starred), job-repository.ts (+starred select +toggleStar +filter +orderBy), api/jobs/route.ts (+starred param), history-view.tsx (+StarButton +exportJobsAsCsv +CSV button +starred filter toggle +starred row styling +CSV starred column), dashboard-view.tsx (mesh-hero-animated), globals.css (+mesh-hero-animated keyframe).
 - No regressions. Lint clean. All features verified end-to-end.
 - Recommended next-round work: glossary auto-suggest from translation history, dark-mode visual QA, keyboard shortcut for "new session" in chat, starred-jobs widget on dashboard.
+
+---
+Task ID: R6
+Agent: webDevReview cron (round 6)
+Task: QA sweep (stable) → added starred-jobs dashboard widget + glossary auto-suggest + improved empty states.
+
+Work Log:
+- Read worklog.md (round 5: 12 views, CSV export, favorites/pin, animated hero).
+- Curl QA: page renders "BhashaSetu", all APIs 200, star API works, 0 errors, lint clean. Project stable.
+
+FEATURE 1: Starred-jobs widget on dashboard
+- Added `starred` state + fetch (`/api/jobs?starred=true&limit=4`) to the dashboard.
+- Added a "Starred translations" Card between the activity chart and the recent-jobs grid:
+  amber-tinted gradient border, star icons, shows up to 4 starred jobs with kind badge +
+  source→target + output preview. "View all" link navigates to History.
+- Only renders when there are starred jobs (conditional).
+- Added `starred: boolean` to the JobSummary interface.
+
+FEATURE 2: Glossary auto-suggest (mine translation history)
+- Added `GlossaryService.suggestFromHistory()` method:
+  - Fetches completed text-translation jobs for a language pair (up to 200).
+  - Extracts short source phrases (2-5 words, stop-word filtered) via sliding window.
+  - Pairs each phrase with the target sentence at the same positional index.
+  - Filters out phrases already in the glossary.
+  - Ranks by frequency across jobs, returns top N.
+- Added helper functions: `extractPhrases()` (stop-word aware sliding window) and
+  `findCorrespondingTarget()` (positional sentence alignment heuristic).
+- Created API route `GET /api/glossary/suggest?sourceLang=&targetLang=&limit=` → `{ suggestions: [{source, target, frequency}] }`.
+- Added `SuggestDialog` component to glossary-view.tsx:
+  - Language-pair selectors + "Generate" button.
+  - Results table with checkboxes, source phrase, translation, frequency badge.
+  - Click row to toggle selection; "Add N to glossary" bulk-creates entries via POST /api/glossary.
+  - Empty/loading/no-results states.
+- Added "Auto-suggest" button (Sparkles icon) to the glossary view header.
+- Verified via curl: GET /api/glossary/suggest?sourceLang=en&targetLang=hi → 5 suggestions returned
+  (e.g. "drip irrigation equipment" with frequency ×1).
+
+STYLING POLISH:
+- Enhanced `EmptyState` component: gradient background (from-muted/30 via-transparent to-muted/20),
+  larger icon (h-14 w-14) with ring-4 ring-primary/5, subtle ping animation behind the icon
+  (3s duration), increased padding (py-16), better spacing.
+- Starred-jobs widget: amber gradient border + from-amber-50/50 background for visual distinction.
+
+QA VERIFICATION:
+- Server returns 200, page renders "BhashaSetu".
+- All APIs return 200 (stats, jobs, glossary, models).
+- Suggest API verified: returns 5 phrase suggestions with frequency rankings.
+- Star API verified: PATCH returns 200 with updated starred state.
+- 0 errors in dev.log.
+- `bun run lint` clean.
+
+Stage Summary:
+- 2 features shipped: starred-jobs dashboard widget + glossary auto-suggest.
+- 2 new files: api/glossary/suggest/route.ts.
+- Modified: GlossaryService.ts (+suggestFromHistory +extractPhrases +findCorrespondingTarget), dashboard-view.tsx (+starred widget +Star icon +starred fetch), glossary-view.tsx (+SuggestDialog +Auto-suggest button +DialogDescription import), shared/empty-state.tsx (gradient + ping animation + larger icon).
+- No regressions. Lint clean. All features verified end-to-end.
+- Recommended next-round work: dark-mode visual QA, keyboard shortcut for "new session" in chat, translation comparison view (side-by-side), glossary suggest improvement with word-alignment.

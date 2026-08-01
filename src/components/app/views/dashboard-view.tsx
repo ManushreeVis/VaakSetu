@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Loader2,
   Sparkles,
+  Star,
 } from "lucide-react";
 import { useAppStore, type ViewId } from "../app-store";
 import { ViewHeader } from "../shared/view-header";
@@ -43,6 +44,7 @@ interface JobSummary {
   id: string;
   kind: string;
   status: string;
+  starred: boolean;
   sourceLang: string;
   targetLang: string;
   inputName: string | null;
@@ -84,15 +86,18 @@ export function DashboardView() {
   const setDefaultTargetLang = useAppStore((s) => s.setDefaultTargetLang);
   const [stats, setStats] = useState<Stats | null>(null);
   const [recent, setRecent] = useState<JobSummary[]>([]);
+  const [starred, setStarred] = useState<JobSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     void Promise.all([
       fetch("/api/stats").then((r) => r.json()),
       fetch("/api/jobs?limit=5").then((r) => r.json()),
-    ]).then(([s, j]) => {
+      fetch("/api/jobs?starred=true&limit=4").then((r) => r.json()),
+    ]).then(([s, j, st]) => {
       setStats(s as Stats);
       setRecent((j as { jobs: JobSummary[] }).jobs ?? []);
+      setStarred((st as { jobs: JobSummary[] }).jobs ?? []);
       setLoading(false);
     });
   }, []);
@@ -184,6 +189,42 @@ export function DashboardView() {
 
       {/* Activity chart */}
       {stats && <ActivityChart data={stats.jobsPerDay ?? []} />}
+
+      {/* Starred jobs widget */}
+      {!loading && starred.length > 0 && (
+        <Card className="overflow-hidden border-amber-500/30 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/10">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
+              Starred translations
+            </CardTitle>
+            <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => setView("history")}>
+              View all <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ul className="divide-y">
+              {starred.map((job) => (
+                <li key={job.id} className="flex items-center gap-3 px-6 py-3">
+                  <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-500" />
+                  <Badge variant="outline" className="shrink-0 text-[11px]">
+                    {KIND_LABEL[job.kind] ?? job.kind}
+                  </Badge>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {job.inputName ?? (job.inputText?.slice(0, 60) || "Untitled") + (job.inputText && job.inputText.length > 60 ? "…" : "")}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {job.sourceLang} → {job.targetLang}
+                      {job.outputText && <span className="ml-2">· {job.outputText.slice(0, 40)}{job.outputText.length > 40 ? "…" : ""}</span>}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Recent jobs */}

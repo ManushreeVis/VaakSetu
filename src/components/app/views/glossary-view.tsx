@@ -34,6 +34,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -77,6 +78,7 @@ export function GlossaryView() {
   const [filterLang, setFilterLang] = useState("all");
   const [filterCat, setFilterCat] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
+  const [showSuggest, setShowSuggest] = useState(false);
   const [editing, setEditing] = useState<GlossaryEntry | null>(null);
 
   const load = useCallback(async () => {
@@ -155,6 +157,9 @@ export function GlossaryView() {
         subtitle="Curated domain terminology for consistent translations across Marathi, Hindi and English."
         actions={
           <>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowSuggest(true)}>
+              <Sparkles className="h-3.5 w-3.5" /> Auto-suggest
+            </Button>
             <Button variant="outline" size="sm" className="gap-1.5" onClick={exportJson} disabled={!entries.length}>
               <Download className="h-3.5 w-3.5" /> Export
             </Button>
@@ -300,6 +305,14 @@ export function GlossaryView() {
           onSaved={() => { setShowAdd(false); setEditing(null); void load(); }}
         />
       )}
+
+      {/* Auto-suggest dialog */}
+      {showSuggest && (
+        <SuggestDialog
+          onClose={() => setShowSuggest(false)}
+          onAdded={() => { setShowSuggest(false); void load(); }}
+        />
+      )}
     </div>
   );
 }
@@ -403,5 +416,169 @@ const GlossaryDialog = ({ entry, onClose, onSaved }: GlossaryDialogProps) => {
   );
 };
 
-// Keep Sparkles import used (for future "suggest" feature)
-void Sparkles;
+// --------------------------------------------------------------------------- Suggest
+
+interface Suggestion {
+  source: string;
+  target: string;
+  frequency: number;
+}
+
+const SuggestDialog = ({ onClose, onAdded }: { onClose: () => void; onAdded: () => void }) => {
+  const [sourceLang, setSourceLang] = useState("en");
+  const [targetLang, setTargetLang] = useState("hi");
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const generate = async () => {
+    setLoading(true);
+    setLoaded(false);
+    try {
+      const res = await fetch(`/api/glossary/suggest?sourceLang=${sourceLang}&targetLang=${targetLang}&limit=15`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Failed to generate suggestions");
+      setSuggestions(data.suggestions ?? []);
+      setSelected(new Set());
+      setLoaded(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to generate suggestions");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggle = (source: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(source)) next.delete(source);
+      else next.add(source);
+      return next;
+    });
+  };
+
+  const addSelected = async () => {
+    setAdding(true);
+    let ok = 0;
+    for (const s of suggestions) {
+      if (!selected.has(s.source)) continue;
+      try {
+        const res = await fetch("/api/glossary", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sourceLang, targetLang, source: s.source, target: s.target, category: "general" }),
+        });
+        if (res.ok) ok++;
+      } catch {
+        // skip duplicates / errors
+      }
+    }
+    setAdding(false);
+    toast.success(`Added ${ok} term${ok === 1 ? "" : "s"} to the glossary.`);
+    onAdded();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Auto-suggest glossary terms
+          </DialogTitle>
+          <DialogDescription>
+            Mine your translation history to discover recurring source→target phrase pairs worth pinning as glossary entries.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex items-end gap-3 py-2">
+          <div className="flex-1">
+            <Label className="mb-1.5 block text-xs text-muted-foreground">From</Label>
+            <LanguageSelect variant="target" value={sourceLang} onChange={setSourceLang} className="w-full" />
+          </div>
+          <ArrowRight className="mb-2 h-4 w-4 text-muted-foreground" />
+          <div className="flex-1">
+            <Label className="mb-1.5 block text-xs text-muted-foreground">To</Label>
+            <LanguageSelect variant="target" value={targetLang} onChange={setTargetLang} className="w-full" />
+          </div>
+          <Button onClick={generate} disabled={loading} className="gap-1.5">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            Generate
+          </Button>
+        </div>
+
+        <div className="max-h-[360px] overflow-y-auto scroll-area-thin rounded-lg border">
+          {loading && (
+            <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Mining translation history…
+            </div>
+          )}
+          {!loading && loaded && suggestions.length === 0 && (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              No new suggestions found. Translate more text in this language pair to build a corpus.
+            </div>
+          )}
+          {!loading && suggestions.length > 0 && (
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-muted/80 backdrop-blur">
+                <tr className="text-left text-xs text-muted-foreground">
+                  <th className="w-8 px-3 py-2"></th>
+                  <th className="px-3 py-2 font-medium">Source phrase</th>
+                  <th className="px-3 py-2 font-medium">Translation</th>
+                  <th className="w-16 px-3 py-2 text-right font-medium">Freq</th>
+                </tr>
+              </thead>
+              <tbody>
+                {suggestions.map((s) => {
+                  const isSelected = selected.has(s.source);
+                  return (
+                    <tr
+                      key={s.source}
+                      onClick={() => toggle(s.source)}
+                      className={`cursor-pointer border-t transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-muted/40"}`}
+                    >
+                      <td className="px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggle(s.source)}
+                          className="h-4 w-4 rounded border-muted-foreground"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </td>
+                      <td className="px-3 py-2 align-top">{s.source}</td>
+                      <td className="px-3 py-2 align-top devanagari" lang={targetLang}>{s.target}</td>
+                      <td className="px-3 py-2 text-right align-top">
+                        <Badge variant="secondary" className="text-[10px]">×{s.frequency}</Badge>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+          {!loading && !loaded && (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              Pick a language pair and click "Generate" to mine suggestions.
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="items-center">
+          <span className="mr-auto text-xs text-muted-foreground">
+            {selected.size > 0 ? `${selected.size} selected` : ""}
+          </span>
+          <Button variant="outline" onClick={onClose} className="gap-1.5">
+            <X className="h-4 w-4" /> Close
+          </Button>
+          <Button onClick={addSelected} disabled={adding || selected.size === 0} className="gap-1.5">
+            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Add {selected.size > 0 ? selected.size : ""} to glossary
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
