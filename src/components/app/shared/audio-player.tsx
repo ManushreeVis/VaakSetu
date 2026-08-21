@@ -20,15 +20,31 @@ export function AudioPlayer({ src, label = "Translated voice", className }: Audi
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+
+    setPlaying(false);
+    setDuration(undefined);
+
     const onEnd = () => setPlaying(false);
-    const onMeta = () => setDuration(audio.duration);
+    const onMeta = () => {
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        setDuration(audio.duration);
+      }
+    };
+
     audio.addEventListener("ended", onEnd);
     audio.addEventListener("loadedmetadata", onMeta);
+    audio.addEventListener("canplaythrough", onMeta);
+
+    if (audio.readyState >= 1 && isFinite(audio.duration) && audio.duration > 0) {
+      setDuration(audio.duration);
+    }
+
     return () => {
       audio.removeEventListener("ended", onEnd);
       audio.removeEventListener("loadedmetadata", onMeta);
+      audio.removeEventListener("canplaythrough", onMeta);
     };
-  }, []);
+  }, [src]);
 
   const toggle = () => {
     const audio = audioRef.current;
@@ -37,8 +53,13 @@ export function AudioPlayer({ src, label = "Translated voice", className }: Audi
       audio.pause();
       setPlaying(false);
     } else {
-      void audio.play();
-      setPlaying(true);
+      audio
+        .play()
+        .then(() => setPlaying(true))
+        .catch((err) => {
+          console.warn("Audio playback issue:", err);
+          setPlaying(false);
+        });
     }
   };
 
@@ -64,7 +85,7 @@ export function AudioPlayer({ src, label = "Translated voice", className }: Audi
       </Button>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{label}</p>
-        <p className="text-xs text-muted-foreground">{fmtTime(duration)} · WAV audio</p>
+        <p className="text-xs text-muted-foreground">{fmtTime(duration)} · Audio</p>
       </div>
       <Button asChild variant="ghost" size="sm" className="gap-1">
         <a href={src} download>

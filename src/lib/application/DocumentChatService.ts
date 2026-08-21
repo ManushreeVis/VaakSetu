@@ -64,7 +64,7 @@ export const DocumentChatService = {
     let replyAudioPath: string | undefined;
     if (opts.speakReply) {
       const audio = await aiEngines.tts.synthesize(reply, session.targetLang);
-      replyAudioPath = await saveOutput(`chat-${session.id}`, `reply-${Date.now()}.wav`, audio);
+      replyAudioPath = await saveOutput(`chat-${session.id}`, `reply-${Date.now()}.mp3`, audio);
       await ChatRepository.updateSession(session.id, { lastAudio: replyAudioPath });
     }
 

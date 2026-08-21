@@ -322,7 +322,7 @@ export function ModelsView() {
             <p className="font-medium">Open-source & on-premises by design</p>
             <p className="text-muted-foreground">
               All models below are open-source (MIT) and run fully on-premises. In production the demo&apos;s{" "}
-              <span className="font-mono text-xs">z-ai</span> adapter is swapped for{" "}
+              <span className="font-mono text-xs">gemini</span> adapter is swapped for{" "}
               <strong>IndicTrans2 / Whisper / AI4Bharat TTS</strong> — no code above the adapter layer changes.
             </p>
           </div>

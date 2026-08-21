@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const audio = await aiEngines.tts.synthesize(body.text, body.language ?? "en", {
       speed: body.speed,
     });
-    const outPath = await saveOutput(`tts-${Date.now()}`, `speech.wav`, audio);
+    const outPath = await saveOutput(`tts-${Date.now()}`, `speech.mp3`, audio);
     const basename = outPath.split("/").slice(-2).join("/");
     return NextResponse.json({ path: outPath, ref: basename, size: audio.length });
   } catch (err) {

@@ -69,8 +69,8 @@ export function SidebarNav() {
         {/* Brand */}
         <div className="flex items-center justify-between gap-2 px-5 py-5" data-tour="brand">
           <div className="flex items-center gap-3">
-            <div className="logo-shimmer flex h-10 w-10 items-center justify-center rounded-xl text-primary-foreground shadow-sm">
-              <span className="text-lg font-bold">वा</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl shadow-sm overflow-hidden p-0.5">
+              <img src="/logo.svg" alt="VaakSetu Logo" className="h-full w-full object-contain" />
             </div>
             <div>
               <p className="text-base font-semibold leading-tight">VaakSetu</p>
