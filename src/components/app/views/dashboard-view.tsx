@@ -333,7 +333,7 @@ export function DashboardView() {
                   <span className="text-lg devanagari" lang={l.code}>{l.nativeName}</span>
                 </div>
               ))}
-              <p className="pt-1 text-[11px] text-muted-foreground">Source supports auto-detect.</p>
+              <p className="pt-1 text-[11px] text-muted-foreground">Supports Marathi, Hindi, and English.</p>
             </CardContent>
           </Card>
 

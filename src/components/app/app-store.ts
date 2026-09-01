@@ -32,9 +32,9 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  activeView: "dashboard",
+  activeView: "text",
   setView: (activeView) => set({ activeView, sidebarOpen: false }),
-  defaultSourceLang: "auto",
+  defaultSourceLang: "mr",
   defaultTargetLang: "hi",
   setDefaultSourceLang: (defaultSourceLang) => set({ defaultSourceLang }),
   setDefaultTargetLang: (defaultTargetLang) => set({ defaultTargetLang }),

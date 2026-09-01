@@ -153,136 +153,187 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
   </div>
 );
 
-const AutoSelectSimulator = () => {
-  const [role, setRole] = useState<EngineRole>("translation");
-  const [sourceLang, setSourceLang] = useState("mr");
-  const [targetLang, setTargetLang] = useState("en");
-  const [durationSec, setDurationSec] = useState("120");
-  const [textLength, setTextLength] = useState("500");
-  const [result, setResult] = useState<{ modelId: string; reason: string } | null>(null);
-  const [loading, setLoading] = useState(false);
+const HardwareOracle = () => {
+  const [ram, setRam] = useState<string>("16");
+  const [storage, setStorage] = useState<string>("512");
+  const [activeConfig, setActiveConfig] = useState<{
+    asr: string;
+    trans: string;
+    ram: string;
+    storage: string;
+  }>({
+    asr: "whisper-large-v3-turbo",
+    trans: "indictrans2-320m",
+    ram: "16",
+    storage: "512",
+  });
+  const [saved, setSaved] = useState(false);
 
-  const run = async () => {
-    setLoading(true);
-    setResult(null);
+  useEffect(() => {
     try {
-      const res = await fetch("/api/models/select", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          role,
-          sourceLang,
-          targetLang,
-          durationSec: role === "transcription" ? Number(durationSec) || 0 : undefined,
-          textLength: Number(textLength) || 0,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      const data = (await res.json()) as { modelId: string; reason: string };
-      setResult(data);
+      const stored = localStorage.getItem("vaaksetu_hardware_config");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.ram) setRam(parsed.ram);
+        if (parsed.storage) setStorage(parsed.storage);
+        setActiveConfig(parsed);
+      }
     } catch {
-      toast.error("Auto-select failed");
-    } finally {
-      setLoading(false);
+      // ignore
     }
+  }, []);
+
+  const ramNum = parseInt(ram, 10) || 16;
+  const storageNum = parseInt(storage, 10) || 512;
+
+  // Compute recommendation
+  let asrRecommendation = "Whisper Large v3 Turbo (SOTA ASR)";
+  let asrId = "whisper-large-v3-turbo";
+  let transRecommendation = "IndicTrans2 320M (ai4bharat/indictrans2-indic-indic-dist-320M)";
+  let transId = "indictrans2-320m";
+  let tierLabel = "⚡ Standard Balanced Tier (Recommended)";
+  let tierDesc = "Perfect balance of state-of-the-art translation accuracy and low latency.";
+  let footprint = "3.2 GB RAM / 4.8 GB SSD";
+
+  if (ramNum >= 32) {
+    asrRecommendation = "Whisper Large v3 Turbo (Full Precision)";
+    asrId = "whisper-large-v3-turbo";
+    transRecommendation = "IndicTrans2 320M + IndicTrans2 1B (Ultra High-Fidelity)";
+    transId = "indictrans2-320m";
+    tierLabel = "🚀 High Performance Tier";
+    tierDesc = "Maximum throughput for simultaneous multi-hour video dubbing and batch translation.";
+    footprint = "6.5 GB RAM / 8.2 GB SSD";
+  } else if (ramNum <= 8) {
+    asrRecommendation = "Whisper Small / Medium (Quantized int8)";
+    asrId = "whisper-small";
+    transRecommendation = "IndicTrans2 320M (Offloaded/Quantized)";
+    transId = "indictrans2-320m";
+    tierLabel = "🌱 Resource-Saver Tier";
+    tierDesc = "Optimized for 8 GB RAM machines with automatic sequential model offloading.";
+    footprint = "2.1 GB RAM / 3.0 GB SSD";
+  }
+
+  const applyConfiguration = () => {
+    const config = {
+      asr: asrId,
+      trans: transId,
+      ram,
+      storage,
+      tierLabel,
+      updatedAt: new Date().toISOString(),
+    };
+    try {
+      localStorage.setItem("vaaksetu_hardware_config", JSON.stringify(config));
+    } catch {
+      // ignore
+    }
+    setActiveConfig(config);
+    setSaved(true);
+    toast.success(`Active configuration updated: ${asrRecommendation} + ${transRecommendation}`);
+    setTimeout(() => setSaved(false), 3000);
   };
 
   return (
-    <Card className="border-primary/30 bg-primary/[0.02]">
+    <Card className="border-primary/40 bg-gradient-to-br from-primary/[0.04] to-primary/[0.01] shadow-sm">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Sparkles className="h-4 w-4 text-primary" /> Auto-select simulator
-        </CardTitle>
-        <CardDescription className="text-xs">
-          Tweak the task parameters and see which model the ModelSelector service picks — and why.
-        </CardDescription>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <Sparkles className="h-4 w-4 text-primary" /> Hardware Model Oracle
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Select your system&apos;s available RAM and SSD storage. The Oracle automatically selects the optimal Whisper and IndicTrans2 model combination.
+            </CardDescription>
+          </div>
+          <Badge variant="outline" className="border-primary/40 bg-primary/10 text-[11px] text-primary">
+            Active: {activeConfig.asr.replace("whisper-", "").toUpperCase()} + {activeConfig.trans.replace("-320m", " 320M").toUpperCase()}
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Role">
-            <Select value={role} onValueChange={(v) => setRole(v as EngineRole)}>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Field label="System RAM">
+            <Select value={ram} onValueChange={setRam}>
               <SelectTrigger size="sm" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="translation">Translation</SelectItem>
-                <SelectItem value="transcription">Transcription</SelectItem>
-                <SelectItem value="tts">Text-to-speech</SelectItem>
-                <SelectItem value="llm">LLM</SelectItem>
+                <SelectItem value="8">8 GB RAM (Entry Level)</SelectItem>
+                <SelectItem value="16">16 GB RAM (Standard / Default)</SelectItem>
+                <SelectItem value="24">24 GB RAM (High Memory)</SelectItem>
+                <SelectItem value="32">32 GB RAM (Pro Workstation)</SelectItem>
+                <SelectItem value="64">64 GB+ RAM (Enterprise)</SelectItem>
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Source lang">
-            <Select value={sourceLang} onValueChange={setSourceLang}>
+
+          <Field label="Storage SSD">
+            <Select value={storage} onValueChange={setStorage}>
               <SelectTrigger size="sm" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {LANGUAGE_LIST.map((l) => (
-                  <SelectItem key={l.code} value={l.code}>
-                    {l.name}
-                  </SelectItem>
-                ))}
+                <SelectItem value="256">256 GB SSD</SelectItem>
+                <SelectItem value="512">512 GB SSD (Standard)</SelectItem>
+                <SelectItem value="1024">1 TB SSD</SelectItem>
+                <SelectItem value="2048">2 TB+ SSD</SelectItem>
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Target lang">
-            <Select value={targetLang} onValueChange={setTargetLang}>
-              <SelectTrigger size="sm" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {LANGUAGE_LIST.map((l) => (
-                  <SelectItem key={l.code} value={l.code}>
-                    {l.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+          <Field label="Target Execution Mode">
+            <div className="flex h-8 items-center rounded-md border bg-muted/30 px-3 text-xs text-muted-foreground">
+              Local On-Premises (Offline SOTA)
+            </div>
           </Field>
-          {role === "transcription" ? (
-            <Field label="Duration (sec)">
-              <Input
-                type="number"
-                min={0}
-                value={durationSec}
-                onChange={(e) => setDurationSec(e.target.value)}
-                className="h-8"
-              />
-            </Field>
-          ) : (
-            <Field label="Text length">
-              <Input
-                type="number"
-                min={0}
-                value={textLength}
-                onChange={(e) => setTextLength(e.target.value)}
-                className="h-8"
-              />
-            </Field>
-          )}
         </div>
 
-        <Button onClick={() => void run()} disabled={loading} className="gap-1.5">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-          Run auto-select
-        </Button>
-
-        {result && (
-          <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/[0.04] p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Selected model
+        {/* Oracle Recommendation Card */}
+        <div className="space-y-3 rounded-xl border border-primary/30 bg-background/80 p-4 shadow-sm backdrop-blur-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                Oracle Recommended Configuration
               </span>
-              {result.modelId ? (
-                <ModelBadge modelId={result.modelId} />
-              ) : (
-                <Badge variant="destructive" className="text-[11px]">None available</Badge>
-              )}
             </div>
-            <p className="text-sm leading-relaxed">{result.reason}</p>
+            <Badge variant="secondary" className="text-[10px]">
+              Est. Footprint: {footprint}
+            </Badge>
           </div>
-        )}
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                ASR & Transcription Model
+              </p>
+              <p className="mt-1 font-medium text-sm text-foreground">{asrRecommendation}</p>
+              <p className="text-[11px] text-muted-foreground">Faster-Whisper int8 / GPU float16</p>
+            </div>
+
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Translation Model
+              </p>
+              <p className="mt-1 font-medium text-sm text-foreground">{transRecommendation}</p>
+              <p className="text-[11px] text-muted-foreground">22 Indian languages + English</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <p className="text-xs text-muted-foreground">
+              <strong>{tierLabel}:</strong> {tierDesc}
+            </p>
+            <Button
+              onClick={applyConfiguration}
+              size="sm"
+              className="gap-1.5 shadow-sm"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              {saved ? "Applied!" : "Apply & Use This Combination"}
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
@@ -329,7 +380,7 @@ export function ModelsView() {
         </CardContent>
       </Card>
 
-      <AutoSelectSimulator />
+      <HardwareOracle />
 
       <section>
         <div className="mb-3 flex items-center justify-between">

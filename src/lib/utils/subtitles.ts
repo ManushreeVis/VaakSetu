@@ -73,8 +73,21 @@ const parseTimestamp = (ts: string): number => {
   return (+m[1] * 3600 + +m[2] * 60 + +m[3]) + +m[4] / 1000;
 };
 
-export const segmentsToCues = (segments: TranscriptionSegment[]): Cue[] =>
-  segments.map((s) => ({ start: s.start, end: s.end, text: s.text }));
+export const segmentsToCues = (segments: TranscriptionSegment[]): Cue[] => {
+  const cues: Cue[] = [];
+  let prevText = "";
+  for (const s of segments) {
+    const text = s.text.trim();
+    if (!text) continue;
+    if (cues.length > 0 && text.toLowerCase() === prevText.toLowerCase()) {
+      cues[cues.length - 1].end = Math.max(cues[cues.length - 1].end, s.end);
+    } else {
+      cues.push({ start: s.start, end: s.end, text });
+      prevText = text;
+    }
+  }
+  return cues;
+};
 
 export type SubtitleFormat = "srt" | "vtt" | "txt" | "json";
 

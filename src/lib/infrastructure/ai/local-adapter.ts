@@ -15,6 +15,7 @@ import type {
   TranslationResult,
   TranscriptionResult,
   TranscriptionSegment,
+  WordTimestamp,
 } from "@/lib/domain/types";
 import type {
   TranslationEngine,
@@ -147,7 +148,9 @@ export const LocalTranscriptionEngine: TranscriptionEngine = {
     else if (modelId?.includes("medium")) modelSize = "medium";
     else if (modelId?.includes("turbo") || modelId?.includes("large")) modelSize = "turbo";
 
-    const res = await fetch(`${LOCAL_AI_URL}/api/transcribe`, {
+    // Use the YouTube-grade endpoint that returns word-level timestamps
+    // and fine-grained sentence segments instead of coarse VAD chunks
+    const res = await fetch(`${LOCAL_AI_URL}/api/transcribe-sentences`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -164,20 +167,52 @@ export const LocalTranscriptionEngine: TranscriptionEngine = {
     }
 
     const data = await res.json();
+
+    // Fine-grained sentence segments (YouTube-grade, from reconstruct_sentences)
     const segments: TranscriptionSegment[] = (data.segments || []).map((s: any) => ({
       start: s.start,
       end: s.end,
       text: s.text,
     }));
 
+    // Coarse VAD segments (for debugging / fallback)
+    const coarseSegments: TranscriptionSegment[] = (data.coarse_segments || []).map((s: any) => ({
+      start: s.start,
+      end: s.end,
+      text: s.text,
+    }));
+
+    // Word-level timestamps for karaoke-style UI highlighting
+    const words: WordTimestamp[] = (data.words || []).map((w: any) => ({
+      word: w.word,
+      start: w.start,
+      end: w.end,
+      probability: w.probability ?? 1.0,
+    }));
+
     return {
       text: data.text,
       segments,
+      coarseSegments: coarseSegments.length > 0 ? coarseSegments : undefined,
+      words: words.length > 0 ? words : undefined,
       detectedLanguage: data.detected_language || language || "hi",
       model: data.model || "whisper-local",
     };
   },
 };
+
+/**
+ * Dedicated YouTube-grade transcription function.
+ * Identical to LocalTranscriptionEngine.transcribe() but explicit for clarity
+ * when calling from MediaTranslator.ts.
+ */
+export async function transcribeSentences(
+  audioPath: string,
+  language?: string,
+  modelId?: string,
+): Promise<TranscriptionResult> {
+  return LocalTranscriptionEngine.transcribe(audioPath, language, modelId);
+}
 
 export const LocalTtsEngine: TtsEngine = {
   async synthesize(text: string, language: string): Promise<Buffer> {

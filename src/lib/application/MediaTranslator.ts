@@ -87,42 +87,24 @@ const translateSegmentsContextual = async (
     );
   }
 
-  // ── Attempt 2: Sequential per-segment (fallback — lower quality but always works) ──
-  // Groups consecutive segments into 3-sentence windows to improve context.
-  const WINDOW_SIZE = 3;
+  // ── Attempt 2: Direct 1:1 sentence translation (lossless fallback) ──
   const translated: TranscriptionSegment[] = [...segments];
 
-  for (let i = 0; i < segments.length; i += WINDOW_SIZE) {
-    const window = segments.slice(i, i + WINDOW_SIZE);
-    const windowText = window
-      .map((s) => s.text.trim())
-      .filter(Boolean)
-      .join(" ");
-
-    if (!windowText) continue;
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    const text = seg.text.trim();
+    if (!text) continue;
 
     try {
       const r = await aiEngines.translation.translate({
-        text: windowText,
+        text,
         sourceLang,
         targetLang,
       });
-
-      // Distribute translated text proportionally back to segments in the window
-      const translatedWords = r.text.split(/\s+/);
-      const totalOriginalChars = window.reduce((a, s) => a + s.text.length, 0) || 1;
-      let wordCursor = 0;
-
-      for (let j = 0; j < window.length; j++) {
-        const segIdx = i + j;
-        const proportion = window[j].text.length / totalOriginalChars;
-        const wordCount = Math.max(1, Math.round(proportion * translatedWords.length));
-        translated[segIdx] = {
-          ...segments[segIdx],
-          text: translatedWords.slice(wordCursor, wordCursor + wordCount).join(" "),
-        };
-        wordCursor += wordCount;
-      }
+      translated[i] = {
+        ...seg,
+        text: r.text.trim() || seg.text,
+      };
     } catch {
       // Keep original text on failure
     }
@@ -227,21 +209,39 @@ export const MediaTranslator = {
         selection.modelId,
       );
 
-      const effectiveSourceLang = transcript.detectedLanguage || request.sourceLang;
+      // Respect user-selected source language if explicitly chosen (not 'auto');
+      // only fall back to Whisper auto-detection when user selected 'auto'.
+      const effectiveSourceLang =
+        request.sourceLang && request.sourceLang !== "auto"
+          ? request.sourceLang
+          : transcript.detectedLanguage || "hi";
+      const segmentCount = transcript.segments.length;
+      const wordCount = transcript.words?.length ?? 0;
+      console.log(
+        `[MediaTranslator] 🎯 YouTube-grade ASR: ${segmentCount} sentence segments` +
+        (wordCount > 0 ? ` from ${wordCount} words` : "") +
+        ` (lang=${effectiveSourceLang})`
+      );
+
       await JobRepository.update(job.id, {
         progress: 40,
         transcript: transcript.text,
         sourceLang: effectiveSourceLang,
       });
 
-      // ── Step 3: Context-aware batched segment translation ──────────────
-      // This replaces the old per-segment loop that caused gibberish output.
+      // ── Step 3: Per-sentence translation (YouTube-grade, 1:1 timestamp mapping) ──
+      // Each segment from the transcriber is already a natural complete sentence.
+      // translate_segments_batched() now translates each sentence independently
+      // with zero proportional word-splitting — no information loss.
       const { segments: translatedSegs, whole } = await translateSegmentsContextual(
         transcript.segments,
         effectiveSourceLang,
         request.targetLang,
       );
 
+      console.log(
+        `[MediaTranslator] ✓ Translation complete: ${translatedSegs.length} translated sentences`
+      );
       await JobRepository.update(job.id, { progress: 60, outputText: whole });
 
       let outputAudioPath: string | undefined;
@@ -295,8 +295,8 @@ export const MediaTranslator = {
           try {
             dubbedVideoName = `${baseName}.${request.targetLang}.dubbed.mp4`;
             const tmpDubbed = path.join(jobDir, dubbedVideoName);
-            // duck=true: keep faint original audio for natural feel
-            await dubVideo(request.inputPath, outputAudioPath, tmpDubbed, true);
+            // duck=false: clean, crystal-clear dubbing without conflicting source dialogue
+            await dubVideo(request.inputPath, outputAudioPath, tmpDubbed, false);
             const dubbedBuf = await fs.readFile(tmpDubbed);
             dubbedVideoPath = await saveOutput(job.id, dubbedVideoName, dubbedBuf);
           } catch (dubErr) {
@@ -324,6 +324,7 @@ export const MediaTranslator = {
         translatedText: whole,
         segments: translatedSegs,
         sourceSegments: transcript.segments,
+        words: transcript.words,
         outputAudioPath,
         outputSrt,
         outputVtt,

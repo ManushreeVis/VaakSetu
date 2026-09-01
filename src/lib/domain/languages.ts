@@ -64,11 +64,9 @@ export const LANGUAGES: Record<"mr" | "hi" | "en", Language> = {
 
 export const LANGUAGE_LIST: Language[] = [LANGUAGES.mr, LANGUAGES.hi, LANGUAGES.en];
 
-/** Languages allowed as a translation source (includes auto-detect). */
-export const SOURCE_LANGUAGES: { code: LanguageCode; label: string; native: string }[] = [
-  { code: "auto", label: "Auto-detect", native: "स्वयं" },
-  ...LANGUAGE_LIST.map((l) => ({ code: l.code, label: l.name, native: l.nativeName })),
-];
+/** Languages allowed as a translation source (explicit selection). */
+export const SOURCE_LANGUAGES: { code: LanguageCode; label: string; native: string }[] =
+  LANGUAGE_LIST.map((l) => ({ code: l.code, label: l.name, native: l.nativeName }));
 
 /** Languages allowed as a translation target. */
 export const TARGET_LANGUAGES = LANGUAGE_LIST.map((l) => ({

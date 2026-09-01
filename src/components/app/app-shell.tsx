@@ -1,12 +1,27 @@
 "use client";
 
-import { Menu, Search, Keyboard } from "lucide-react";
+import {
+  Menu,
+  Search,
+  Keyboard,
+  Languages,
+  Clapperboard,
+  Mic,
+  FileText,
+  Repeat2,
+  History,
+  BookOpen,
+  Cpu,
+  Sparkles,
+  ShieldCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarNav } from "./sidebar-nav";
-import { useAppStore } from "./app-store";
+import { useAppStore, type ViewId } from "./app-store";
 import { CommandPalette } from "./command-palette";
 import { ShortcutsHelp } from "./shortcuts-help";
 import { useKeyboardShortcuts } from "./use-keyboard-shortcuts";
+import { ThemeToggle } from "./theme-toggle";
 import { DashboardView } from "./views/dashboard-view";
 import { TextTranslateView } from "./views/text-translate-view";
 import { BatchTranslateView } from "./views/batch-translate-view";
@@ -20,112 +35,175 @@ import { OnboardingTour } from "./onboarding-tour";
 import { ModelsView } from "./views/models-view";
 import { FinetuneView } from "./views/finetune-view";
 import { SettingsView } from "./views/settings-view";
+import { cn } from "@/lib/utils";
 
-const VIEW_TITLES: Record<string, { title: string; native: string }> = {
-  dashboard: { title: "Dashboard", native: "डॅशबोर्ड" },
-  text: { title: "Text Translation", native: "मजकूर भाषांतर" },
-  batch: { title: "Batch Translation", native: "साखळी भाषांतर" },
-  media: { title: "Audio & Video Translation", native: "ध्वनी व व्हिडिओ भाषांतर" },
-  chat: { title: "Chat with your Document", native: "दस्तऐवजाशी संभाषण" },
-  summary: { title: "Summarize", native: "सारांश" },
-  convert: { title: "Format Conversion", native: "स्वरूप रूपांतर" },
-  glossary: { title: "Glossary", native: "शब्दकोश" },
-  history: { title: "History", native: "इतिहास" },
-  models: { title: "Models & Auto-Select", native: "प्रारूपे व स्वयंचलित निवड" },
-  finetune: { title: "Fine-tune Models", native: "प्रारूप फाइन-ट्यूनिंग" },
-  settings: { title: "Settings", native: "सेटिंग्ज" },
-};
+const PRIMARY_MODES: { id: ViewId; label: string; native: string; icon: typeof Languages }[] = [
+  { id: "text", label: "Text", native: "मजकूर", icon: Languages },
+  { id: "media", label: "Video", native: "व्हिडिओ", icon: Clapperboard },
+  { id: "media", label: "Audio", native: "ऑडिओ", icon: Mic },
+  { id: "chat", label: "Documents", native: "दस्तऐवज", icon: FileText },
+  { id: "convert", label: "Convert", native: "रूपांतर", icon: Repeat2 },
+];
 
 export function AppShell() {
-  const { activeView, setSidebarOpen } = useAppStore();
-  const meta = VIEW_TITLES[activeView] ?? VIEW_TITLES.dashboard;
+  const { activeView, setView, setSidebarOpen } = useAppStore();
   useKeyboardShortcuts();
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <div className="flex flex-1">
-        <SidebarNav />
-        <div className="flex min-w-0 flex-1 flex-col">
-          {/* Top header (mobile menu + breadcrumb) */}
-          <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur lg:px-6">
+    <div className="flex min-h-screen flex-col bg-background text-foreground selection:bg-primary/20">
+      {/* Slide-over Drawer */}
+      <SidebarNav />
+
+      {/* Main Google Translate Layout Container */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Top Header Bar */}
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-md lg:px-8">
+          {/* Left: Hamburger + Brand */}
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden h-9 w-9"
+              className="h-10 w-10 rounded-full hover:bg-muted"
               onClick={() => setSidebarOpen(true)}
-              aria-label="Open menu"
+              aria-label="Open menu drawer"
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium leading-tight">{meta.title}</p>
-              <p className="truncate text-[11px] text-muted-foreground devanagari">{meta.native}</p>
-            </div>
-            <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-              <Button
-                variant="outline"
-                size="sm"
-                className="hidden h-8 gap-2 sm:flex"
-                onClick={() => window.dispatchEvent(new CustomEvent("vaak:toggle-shortcuts"))}
-              >
-                <Keyboard className="h-3.5 w-3.5" />
-                <kbd className="font-mono text-[11px]">?</kbd>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-2"
-                data-tour="palette-btn"
-                onClick={() => window.dispatchEvent(new CustomEvent("vaak:toggle-palette"))}
-              >
-                <Search className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Search</span>
-                <kbd className="ml-1 hidden rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] sm:inline">⌘K</kbd>
-              </Button>
-              <span className="hidden items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-medium text-primary sm:inline-flex">
-                <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-primary" />
-                IndicTrans2 ready
-              </span>
-            </div>
-          </header>
 
-          {/* Main content */}
-          <main className="flex-1 px-4 py-6 lg:px-8">
-            <div className="mx-auto w-full max-w-6xl">
-              {activeView === "dashboard" && <DashboardView />}
-              {activeView === "text" && <TextTranslateView />}
-              {activeView === "batch" && <BatchTranslateView />}
-              {activeView === "media" && <MediaTranslateView />}
-              {activeView === "chat" && <DocumentChatView />}
-              {activeView === "summary" && <SummaryView />}
-              {activeView === "convert" && <ConvertView />}
-              {activeView === "glossary" && <GlossaryView />}
-              {activeView === "history" && <HistoryView />}
-              {activeView === "models" && <ModelsView />}
-              {activeView === "finetune" && <FinetuneView />}
-              {activeView === "settings" && <SettingsView />}
-            </div>
-          </main>
+            <button
+              onClick={() => setView("text")}
+              className="flex items-center gap-2.5 text-left transition-opacity hover:opacity-90"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl p-0.5 shadow-sm">
+                <img src="/logo.svg" alt="VaakSetu" className="h-full w-full object-contain" />
+              </div>
+              <div>
+                <span className="text-lg font-semibold tracking-tight text-foreground">
+                  VaakSetu <span className="font-normal text-muted-foreground">Translate</span>
+                </span>
+                <span className="ml-1.5 hidden text-xs text-muted-foreground devanagari sm:inline">
+                  वाक्सेतु
+                </span>
+              </div>
+            </button>
+          </div>
 
-          {/* Sticky footer */}
-          <footer className="mt-auto border-t bg-background/80 px-4 py-4 backdrop-blur lg:px-8">
-            <CommandPalette />
-            <ShortcutsHelp />
-            <OnboardingTour />
-            <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center">
-              <p>
-                <span className="font-medium text-foreground">VaakSetu</span> · वाक्सेतु —
-                Offline multilingual translation suite for BAIF · Built with open-source models
-                (IndicTrans2 · Whisper · AI4Bharat TTS).
-              </p>
-              <p className="flex items-center gap-3">
-                <span>Tech for Good Hackathon</span>
-                <span className="hidden sm:inline">·</span>
-                <span className="hidden sm:inline">No data leaves your premises</span>
-              </p>
-            </div>
-          </footer>
+          {/* Right Header Actions */}
+          <div className="flex items-center gap-2">
+            {/* Active Model Pill */}
+            <button
+              onClick={() => setView("models")}
+              className="hidden items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20 sm:inline-flex"
+            >
+              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span>IndicTrans2 · Whisper</span>
+            </button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground"
+              onClick={() => window.dispatchEvent(new CustomEvent("vaak:toggle-palette"))}
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden h-9 w-9 rounded-full text-muted-foreground hover:text-foreground sm:inline-flex"
+              onClick={() => window.dispatchEvent(new CustomEvent("vaak:toggle-shortcuts"))}
+              aria-label="Keyboard shortcuts"
+            >
+              <Keyboard className="h-4 w-4" />
+            </Button>
+
+            <ThemeToggle />
+          </div>
+        </header>
+
+        {/* Center Mode Switcher (Google Translate Pills) */}
+        <div className="mx-auto w-full max-w-5xl px-4 pt-6 pb-2">
+          <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto scroll-area-thin pb-2">
+            {PRIMARY_MODES.map((mode, idx) => {
+              const isActive =
+                activeView === mode.id ||
+                (mode.label === "Audio" && activeView === "media");
+              const Icon = mode.icon;
+              return (
+                <button
+                  key={`${mode.id}-${idx}`}
+                  onClick={() => setView(mode.id)}
+                  className={cn(
+                    "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 shrink-0",
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-sm scale-105"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent",
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{mode.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
+
+        {/* Main Translation Canvas */}
+        <main className="flex-1 px-4 py-4 lg:px-8">
+          <div className="mx-auto w-full max-w-5xl">
+            {activeView === "dashboard" && <DashboardView />}
+            {activeView === "text" && <TextTranslateView />}
+            {activeView === "batch" && <BatchTranslateView />}
+            {activeView === "media" && <MediaTranslateView />}
+            {activeView === "chat" && <DocumentChatView />}
+            {activeView === "summary" && <SummaryView />}
+            {activeView === "convert" && <ConvertView />}
+            {activeView === "glossary" && <GlossaryView />}
+            {activeView === "history" && <HistoryView />}
+            {activeView === "models" && <ModelsView />}
+            {activeView === "finetune" && <FinetuneView />}
+            {activeView === "settings" && <SettingsView />}
+          </div>
+        </main>
+
+        {/* Bottom Navigation Utilities (History / Saved / Oracle) */}
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-center gap-6 py-6 text-xs text-muted-foreground">
+          <button
+            onClick={() => setView("history")}
+            className="flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-2 font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <History className="h-4 w-4 text-primary" />
+            <span>History</span>
+          </button>
+
+          <button
+            onClick={() => setView("glossary")}
+            className="flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-2 font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <BookOpen className="h-4 w-4 text-primary" />
+            <span>Saved / Glossary</span>
+          </button>
+
+          <button
+            onClick={() => setView("models")}
+            className="flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-2 font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <Cpu className="h-4 w-4 text-primary" />
+            <span>Hardware Oracle</span>
+          </button>
+        </div>
+
+        {/* Subtle Footer */}
+        <footer className="border-t bg-background/50 px-4 py-3 backdrop-blur lg:px-8 text-center text-xs text-muted-foreground">
+          <CommandPalette />
+          <ShortcutsHelp />
+          <OnboardingTour />
+          <p>
+            <span className="font-semibold text-foreground">VaakSetu</span> · Offline Multilingual Suite for BAIF · 100% on-premises open-source AI
+          </p>
+        </footer>
       </div>
     </div>
   );

@@ -37,9 +37,21 @@ export interface TranscriptionSegment {
   text: string;
 }
 
+/** Word-level timestamp from Whisper word_timestamps=True */
+export interface WordTimestamp {
+  word: string;
+  start: number;
+  end: number;
+  probability: number;
+}
+
 export interface TranscriptionResult {
   text: string;
   segments: TranscriptionSegment[];
+  /** Fine-grained sentence segments (YouTube-grade, from reconstruct_sentences). Same as segments. */
+  coarseSegments?: TranscriptionSegment[];
+  /** Raw word-level timestamps for karaoke-style UI highlighting. */
+  words?: WordTimestamp[];
   detectedLanguage?: string;
   model: string;
 }
@@ -62,6 +74,8 @@ export interface MediaTranslationResult {
   translatedText: string;
   segments: TranscriptionSegment[];
   sourceSegments?: TranscriptionSegment[];
+  /** Word-level timestamps from Whisper for karaoke-style UI highlighting. */
+  words?: WordTimestamp[];
   outputAudioPath?: string;
   outputSrt?: string;
   outputVtt?: string;

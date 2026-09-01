@@ -33,7 +33,6 @@ interface NavItem {
 const NAV: NavItem[] = [
   { id: "dashboard", label: "Dashboard", native: "डॅशबोर्ड", icon: LayoutDashboard, group: "Workspace" },
   { id: "text", label: "Text Translate", native: "मजकूर भाषांतर", icon: Languages, group: "Tools" },
-  { id: "batch", label: "Batch Translate", native: "साखळी भाषांतर", icon: Layers, group: "Tools" },
   { id: "media", label: "Audio / Video", native: "ध्वनी / व्हिडिओ", icon: Clapperboard, group: "Tools" },
   { id: "chat", label: "Chat with Document", native: "दस्तऐवजाशी संभाषण", icon: MessagesSquare, group: "Tools" },
   { id: "summary", label: "Summary", native: "सारांश", icon: ScrollText, group: "Tools" },
@@ -51,10 +50,10 @@ export function SidebarNav() {
 
   return (
     <>
-      {/* Mobile overlay */}
+      {/* Backdrop overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity animate-in fade-in"
           onClick={() => setSidebarOpen(false)}
           aria-hidden
         />
@@ -62,12 +61,12 @@ export function SidebarNav() {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r bg-sidebar text-sidebar-foreground transition-transform lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r bg-sidebar text-sidebar-foreground shadow-2xl transition-transform duration-300 ease-in-out",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         {/* Brand */}
-        <div className="flex items-center justify-between gap-2 px-5 py-5" data-tour="brand">
+        <div className="flex items-center justify-between gap-2 px-5 py-5 border-b" data-tour="brand">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl shadow-sm overflow-hidden p-0.5">
               <img src="/logo.svg" alt="VaakSetu Logo" className="h-full w-full object-contain" />
@@ -80,7 +79,7 @@ export function SidebarNav() {
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden h-8 w-8"
+            className="h-8 w-8 rounded-full"
             onClick={() => setSidebarOpen(false)}
             aria-label="Close menu"
           >

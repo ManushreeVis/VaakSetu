@@ -73,14 +73,29 @@ const downloadBlob = (name: string, content: string, type: string) => {
 
 function SubtitlesTab() {
   const [content, setContent] = useState("");
+  const [fileName, setFileName] = useState<string | null>(null);
   const [to, setTo] = useState<SubFormat>("vtt");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SubtitleResult | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFileName(f.name);
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = (evt.target?.result as string) || "";
+      setContent(text);
+      setResult(null);
+      toast.success(`Loaded "${f.name}" (${(f.size / 1024).toFixed(1)} KB)`);
+    };
+    reader.readAsText(f);
+  };
+
   const convert = async () => {
     if (!content.trim()) {
-      toast.error("Paste some subtitle content first.");
+      toast.error("Upload a subtitle file or paste some subtitle content first.");
       return;
     }
     setLoading(true);
@@ -112,21 +127,46 @@ function SubtitlesTab() {
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <Card className="flex flex-col">
         <CardContent className="flex flex-1 flex-col gap-3 p-4">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs text-muted-foreground">Input content</Label>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1 text-xs"
-              onClick={() => { setContent(SAMPLE_SRT); setResult(null); }}
-            >
-              <FileText className="h-3.5 w-3.5" /> Load sample SRT
-            </Button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">Input content</Label>
+              {fileName && (
+                <Badge variant="secondary" className="gap-1 text-[10px]">
+                  <FileText className="h-3 w-3" /> {fileName}
+                  <button
+                    onClick={() => { setFileName(null); setContent(""); }}
+                    className="ml-1 hover:text-destructive"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border bg-background px-2.5 py-1 text-xs font-medium shadow-sm hover:bg-accent hover:text-accent-foreground">
+                <FileText className="h-3.5 w-3.5" />
+                <span>Upload File</span>
+                <input
+                  type="file"
+                  accept=".srt,.vtt,.txt,.json,.sbv"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+              </label>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 text-xs"
+                onClick={() => { setContent(SAMPLE_SRT); setFileName(null); setResult(null); }}
+              >
+                Sample SRT
+              </Button>
+            </div>
           </div>
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder={"1\n00:00:00,000 --> 00:00:02,000\nHello world…"}
+            placeholder={"Upload an SRT/VTT/JSON file above or paste:\n1\n00:00:00,000 --> 00:00:02,000\nHello world…"}
             className="min-h-[260px] flex-1 resize-none font-mono text-sm"
             spellCheck={false}
           />
