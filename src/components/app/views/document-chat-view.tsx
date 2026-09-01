@@ -134,18 +134,36 @@ const NewSessionForm = ({ onCreated, titleRef }: NewSessionFormProps) => {
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
-    if (file.size > 10_000_000) {
-      toast.error("Document too large", { description: "Keep files under 10 MB." });
+    if (file.size > 25_000_000) {
+      toast.error("Document too large", { description: "Keep files under 25 MB." });
       return;
     }
-    try {
-      const text = await file.text();
-      setDocumentText(text);
-      setDocumentName(file.name);
-      if (!title) setTitle(file.name.replace(/\.[^.]+$/, ""));
-      toast.success(`Loaded "${file.name}"`);
-    } catch {
-      toast.error("Could not read file");
+    setDocumentName(file.name);
+    if (!title) setTitle(file.name.replace(/\.[^.]+$/, ""));
+
+    if (file.name.toLowerCase().endsWith(".pdf") || file.name.toLowerCase().endsWith(".docx")) {
+      toast.info(`Extracting clean text and pages from ${file.name}…`);
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/document/extract", { method: "POST", body: fd });
+        if (!res.ok) throw new Error("PDF extraction failed");
+        const data = await res.json();
+        setDocumentText(data.full_text || "");
+        toast.success(`Extracted ${data.total_pages || 1} pages (${data.total_words || 0} words)`);
+      } catch {
+        toast.error("Could not parse PDF. Falling back to plain text.");
+        const text = await file.text();
+        setDocumentText(text);
+      }
+    } else {
+      try {
+        const text = await file.text();
+        setDocumentText(text);
+        toast.success(`Loaded "${file.name}"`);
+      } catch {
+        toast.error("Could not read file");
+      }
     }
   };
 
@@ -517,12 +535,30 @@ const HandbookTranslator = ({ onSendToChat }: HandbookTranslatorProps) => {
     if (!f) return;
     setFileName(f.name);
     setTranslatedText("");
-    try {
-      const text = await f.text();
-      setDocText(text);
-      toast.success(`Loaded "${f.name}" (${(f.size / 1024).toFixed(1)} KB)`);
-    } catch {
-      toast.error("Could not read file");
+
+    if (f.name.toLowerCase().endsWith(".pdf") || f.name.toLowerCase().endsWith(".docx")) {
+      toast.info(`Extracting clean text and pages from ${f.name}…`);
+      try {
+        const fd = new FormData();
+        fd.append("file", f);
+        const res = await fetch("/api/document/extract", { method: "POST", body: fd });
+        if (!res.ok) throw new Error("PDF extraction failed");
+        const data = await res.json();
+        setDocText(data.full_text || "");
+        toast.success(`Extracted ${data.total_pages || 1} pages (${data.total_words || 0} words) from "${f.name}"!`);
+      } catch {
+        toast.error("Could not parse PDF. Falling back to plain text.");
+        const text = await f.text();
+        setDocText(text);
+      }
+    } else {
+      try {
+        const text = await f.text();
+        setDocText(text);
+        toast.success(`Loaded "${f.name}" (${(f.size / 1024).toFixed(1)} KB)`);
+      } catch {
+        toast.error("Could not read file");
+      }
     }
   };
 

@@ -7,6 +7,7 @@ export type ViewId =
   | "text"
   | "batch"
   | "media"
+  | "audio"
   | "chat"
   | "summary"
   | "convert"

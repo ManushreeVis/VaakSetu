@@ -1678,6 +1678,66 @@ async def dub_endpoint(req: DubRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/document/extract-text")
+async def extract_document_text_endpoint(file: UploadFile = File(...)):
+    """
+    Extract clean human-readable text and pages from uploaded PDF or doc files.
+    Eliminates binary gibberish and produces structured page content.
+    """
+    filename = file.filename or "document.pdf"
+    content = await file.read()
+    pages = []
+    full_text = ""
+
+    if filename.lower().endswith(".pdf"):
+        try:
+            import pymupdf
+            doc = pymupdf.open(stream=content, filetype="pdf")
+            for page_num, page in enumerate(doc, 1):
+                p_text = page.get_text().strip()
+                if p_text:
+                    pages.append({"page": page_num, "text": p_text})
+                    full_text += f"\n--- Page {page_num} ---\n" + p_text + "\n"
+            doc.close()
+        except Exception as e:
+            try:
+                import io
+                from pypdf import PdfReader
+                reader = PdfReader(io.BytesIO(content))
+                for page_num, page in enumerate(reader.pages, 1):
+                    p_text = (page.extract_text() or "").strip()
+                    if p_text:
+                        pages.append({"page": page_num, "text": p_text})
+                        full_text += f"\n--- Page {page_num} ---\n" + p_text + "\n"
+            except Exception as e2:
+                raise HTTPException(status_code=400, detail=f"Failed to parse PDF: {e2}")
+    elif filename.lower().endswith(".docx"):
+        try:
+            import io
+            import docx
+            doc = docx.Document(io.BytesIO(content))
+            paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+            full_text = "\n\n".join(paragraphs)
+            pages.append({"page": 1, "text": full_text})
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to parse docx: {e}")
+    else:
+        try:
+            full_text = content.decode("utf-8")
+        except UnicodeDecodeError:
+            full_text = content.decode("latin-1", errors="replace")
+        pages.append({"page": 1, "text": full_text})
+
+    return {
+        "filename": filename,
+        "total_pages": len(pages),
+        "total_chars": len(full_text),
+        "total_words": len(full_text.split()),
+        "pages": pages,
+        "full_text": full_text.strip()
+    }
+
+
 @app.post("/api/system/offload")
 async def offload_models_endpoint():
     """
@@ -1698,3 +1758,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("LOCAL_AI_PORT", 8000))
     print(f"[Local AI] Starting VaakSetu Local AI Engine v3.0 on http://127.0.0.1:{port}")
     uvicorn.run(app, host="127.0.0.1", port=port, log_level="info")
+

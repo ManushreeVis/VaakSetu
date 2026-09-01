@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Menu,
   Search,
   Keyboard,
   Languages,
@@ -12,11 +11,9 @@ import {
   History,
   BookOpen,
   Cpu,
-  Sparkles,
-  ShieldCheck,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SidebarNav } from "./sidebar-nav";
 import { useAppStore, type ViewId } from "./app-store";
 import { CommandPalette } from "./command-palette";
 import { ShortcutsHelp } from "./shortcuts-help";
@@ -26,6 +23,7 @@ import { DashboardView } from "./views/dashboard-view";
 import { TextTranslateView } from "./views/text-translate-view";
 import { BatchTranslateView } from "./views/batch-translate-view";
 import { MediaTranslateView } from "./views/media-translate-view";
+import { AudioTranslateView } from "./views/audio-translate-view";
 import { DocumentChatView } from "./views/document-chat-view";
 import { SummaryView } from "./views/summary-view";
 import { ConvertView } from "./views/convert-view";
@@ -40,36 +38,23 @@ import { cn } from "@/lib/utils";
 const PRIMARY_MODES: { id: ViewId; label: string; native: string; icon: typeof Languages }[] = [
   { id: "text", label: "Text", native: "मजकूर", icon: Languages },
   { id: "media", label: "Video", native: "व्हिडिओ", icon: Clapperboard },
-  { id: "media", label: "Audio", native: "ऑडिओ", icon: Mic },
+  { id: "audio", label: "Audio", native: "ऑडिओ", icon: Mic },
   { id: "chat", label: "Documents", native: "दस्तऐवज", icon: FileText },
   { id: "convert", label: "Convert", native: "रूपांतर", icon: Repeat2 },
 ];
 
 export function AppShell() {
-  const { activeView, setView, setSidebarOpen } = useAppStore();
+  const { activeView, setView } = useAppStore();
   useKeyboardShortcuts();
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground selection:bg-primary/20">
-      {/* Slide-over Drawer */}
-      <SidebarNav />
-
       {/* Main Google Translate Layout Container */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top Header Bar */}
+        {/* Top Header Bar (Clean, no hamburger) */}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-md lg:px-8">
-          {/* Left: Hamburger + Brand */}
+          {/* Left: Brand */}
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-full hover:bg-muted"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open menu drawer"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-
             <button
               onClick={() => setView("text")}
               className="flex items-center gap-2.5 text-left transition-opacity hover:opacity-90"
@@ -127,9 +112,7 @@ export function AppShell() {
         <div className="mx-auto w-full max-w-5xl px-4 pt-6 pb-2">
           <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto scroll-area-thin pb-2">
             {PRIMARY_MODES.map((mode, idx) => {
-              const isActive =
-                activeView === mode.id ||
-                (mode.label === "Audio" && activeView === "media");
+              const isActive = activeView === mode.id;
               const Icon = mode.icon;
               return (
                 <button
@@ -150,48 +133,95 @@ export function AppShell() {
           </div>
         </div>
 
-        {/* Main Translation Canvas */}
+        {/* Main Translation Canvas (Persistent DOM Mounting so state is NEVER lost on tab switch!) */}
         <main className="flex-1 px-4 py-4 lg:px-8">
           <div className="mx-auto w-full max-w-5xl">
-            {activeView === "dashboard" && <DashboardView />}
-            {activeView === "text" && <TextTranslateView />}
-            {activeView === "batch" && <BatchTranslateView />}
-            {activeView === "media" && <MediaTranslateView />}
-            {activeView === "chat" && <DocumentChatView />}
-            {activeView === "summary" && <SummaryView />}
-            {activeView === "convert" && <ConvertView />}
-            {activeView === "glossary" && <GlossaryView />}
-            {activeView === "history" && <HistoryView />}
-            {activeView === "models" && <ModelsView />}
-            {activeView === "finetune" && <FinetuneView />}
-            {activeView === "settings" && <SettingsView />}
+            <div className={activeView === "text" ? "block" : "hidden"}>
+              <TextTranslateView />
+            </div>
+            <div className={activeView === "media" ? "block" : "hidden"}>
+              <MediaTranslateView />
+            </div>
+            <div className={activeView === "audio" ? "block" : "hidden"}>
+              <AudioTranslateView />
+            </div>
+            <div className={activeView === "chat" ? "block" : "hidden"}>
+              <DocumentChatView />
+            </div>
+            <div className={activeView === "convert" ? "block" : "hidden"}>
+              <ConvertView />
+            </div>
+            <div className={activeView === "history" ? "block" : "hidden"}>
+              <HistoryView />
+            </div>
+            <div className={activeView === "glossary" ? "block" : "hidden"}>
+              <GlossaryView />
+            </div>
+            <div className={activeView === "models" ? "block" : "hidden"}>
+              <ModelsView />
+            </div>
+            <div className={activeView === "finetune" ? "block" : "hidden"}>
+              <FinetuneView />
+            </div>
+            <div className={activeView === "settings" ? "block" : "hidden"}>
+              <SettingsView />
+            </div>
+            <div className={activeView === "dashboard" ? "block" : "hidden"}>
+              <DashboardView />
+            </div>
+            <div className={activeView === "summary" ? "block" : "hidden"}>
+              <SummaryView />
+            </div>
+            <div className={activeView === "batch" ? "block" : "hidden"}>
+              <BatchTranslateView />
+            </div>
           </div>
         </main>
 
-        {/* Bottom Navigation Utilities (History / Saved / Oracle) */}
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-center gap-6 py-6 text-xs text-muted-foreground">
+        {/* Bottom Navigation Utilities (History / Saved / Oracle / Settings) */}
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-center gap-4 py-6 text-xs text-muted-foreground px-4">
           <button
             onClick={() => setView("history")}
-            className="flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-2 font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+            className={cn(
+              "flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium shadow-sm transition-colors",
+              activeView === "history" ? "bg-primary text-primary-foreground border-primary" : "bg-card/60 hover:bg-accent hover:text-accent-foreground",
+            )}
           >
-            <History className="h-4 w-4 text-primary" />
+            <History className="h-4 w-4" />
             <span>History</span>
           </button>
 
           <button
             onClick={() => setView("glossary")}
-            className="flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-2 font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+            className={cn(
+              "flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium shadow-sm transition-colors",
+              activeView === "glossary" ? "bg-primary text-primary-foreground border-primary" : "bg-card/60 hover:bg-accent hover:text-accent-foreground",
+            )}
           >
-            <BookOpen className="h-4 w-4 text-primary" />
+            <BookOpen className="h-4 w-4" />
             <span>Saved / Glossary</span>
           </button>
 
           <button
             onClick={() => setView("models")}
-            className="flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-2 font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+            className={cn(
+              "flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium shadow-sm transition-colors",
+              activeView === "models" ? "bg-primary text-primary-foreground border-primary" : "bg-card/60 hover:bg-accent hover:text-accent-foreground",
+            )}
           >
-            <Cpu className="h-4 w-4 text-primary" />
+            <Cpu className="h-4 w-4" />
             <span>Hardware Oracle</span>
+          </button>
+
+          <button
+            onClick={() => setView("settings")}
+            className={cn(
+              "flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium shadow-sm transition-colors",
+              activeView === "settings" ? "bg-primary text-primary-foreground border-primary" : "bg-card/60 hover:bg-accent hover:text-accent-foreground",
+            )}
+          >
+            <Settings className="h-4 w-4" />
+            <span>Settings</span>
           </button>
         </div>
 
