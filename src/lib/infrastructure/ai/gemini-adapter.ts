@@ -11,6 +11,12 @@
 import fs from "fs/promises";
 import path from "path";
 import { LANGUAGES, languageLabel } from "@/lib/domain/languages";
+import {
+  buildSegments,
+  splitTextForTts,
+  detectTtsLang,
+  createSilentWavBuffer,
+} from "./ai-utils";
 import type {
   TranslationRequest,
   TranslationResult,
@@ -142,38 +148,6 @@ const GeminiTranslationEngine: TranslationEngine = {
 
 // --------------------------------------------------------------------------- Transcription
 
-const buildSegments = (
-  text: string,
-  durationSec?: number,
-): TranscriptionSegment[] => {
-  const clean = text.replace(/\s+/g, " ").trim();
-  if (!clean) return [];
-  const sentences = clean
-    .split(/(?<=[।.!?])\s+|(?<=।)/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const chunks: string[] = [];
-  let buf = "";
-  for (const s of sentences) {
-    if ((buf + " " + s).trim().length > 84 && buf) {
-      chunks.push(buf.trim());
-      buf = s;
-    } else {
-      buf = (buf ? buf + " " : "") + s;
-    }
-  }
-  if (buf.trim()) chunks.push(buf.trim());
-
-  const total = durationSec && durationSec > 0 ? durationSec : Math.max(6, chunks.length * 4);
-  const charTotal = chunks.reduce((a, c) => a + c.length, 0) || 1;
-  let cursor = 0;
-  return chunks.map((c) => {
-    const dur = Math.max(1.2, (c.length / charTotal) * total);
-    const seg: TranscriptionSegment = { start: cursor, end: cursor + dur, text: c };
-    cursor += dur;
-    return seg;
-  });
-};
 
 function getMimeType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
@@ -194,7 +168,11 @@ function getMimeType(filePath: string): string {
 }
 
 const GeminiTranscriptionEngine: TranscriptionEngine = {
-  async transcribe(audioPath: string, language?: string): Promise<TranscriptionResult> {
+  async transcribe(
+    audioPath: string,
+    language?: string,
+    _modelId?: string,
+  ): Promise<TranscriptionResult> {
     const buffer = await fs.readFile(audioPath);
     const base64 = buffer.toString("base64");
     const mimeType = getMimeType(audioPath);
@@ -229,36 +207,7 @@ const GeminiTranscriptionEngine: TranscriptionEngine = {
 
 // --------------------------------------------------------------------------- TTS
 
-/** Split text into small chunks for TTS processing */
-function splitTextForTts(text: string, maxLen = 190): string[] {
-  const sentences = text.replace(/\s+/g, " ").split(/(?<=[।.!?])\s+/);
-  const chunks: string[] = [];
-  let current = "";
-  for (const sentence of sentences) {
-    if ((current + " " + sentence).trim().length > maxLen) {
-      if (current.trim()) chunks.push(current.trim());
-      current = sentence;
-    } else {
-      current = (current ? current + " " : "") + sentence;
-    }
-  }
-  if (current.trim()) chunks.push(current.trim());
-  return chunks.length ? chunks : [text];
-}
 
-function detectTtsLang(text: string, requestedLang?: string): string {
-  const norm = (requestedLang ?? "").trim().toLowerCase();
-  if (norm === "mr" || norm.startsWith("mr") || norm.includes("marathi")) return "mr";
-  if (norm === "hi" || norm.startsWith("hi") || norm.includes("hindi")) return "hi";
-  if (norm === "en" || norm.startsWith("en") || norm.includes("english")) return "en";
-
-  // Automatic script inspection fallback (Devanagari block for Hindi / Marathi)
-  const hasDevanagari = /[\u0900-\u097F]/.test(text);
-  if (hasDevanagari) {
-    return "hi";
-  }
-  return "en";
-}
 
 const GeminiTtsEngine: TtsEngine = {
   async synthesize(text: string, language: string, _opts): Promise<Buffer> {
@@ -291,30 +240,7 @@ const GeminiTtsEngine: TtsEngine = {
   },
 };
 
-function createSilentWavBuffer(durationSec: number): Buffer {
-  const sampleRate = 22050;
-  const numChannels = 1;
-  const bitsPerSample = 16;
-  const numSamples = Math.floor(sampleRate * durationSec);
-  const dataSize = numSamples * numChannels * (bitsPerSample / 8);
-  const buffer = Buffer.alloc(44 + dataSize);
 
-  buffer.write("RIFF", 0);
-  buffer.writeUInt32LE(36 + dataSize, 4);
-  buffer.write("WAVE", 8);
-  buffer.write("fmt ", 12);
-  buffer.writeUInt32LE(16, 16);
-  buffer.writeUInt16LE(1, 20);
-  buffer.writeUInt16LE(numChannels, 22);
-  buffer.writeUInt32LE(sampleRate, 24);
-  buffer.writeUInt32LE(sampleRate * numChannels * (bitsPerSample / 8), 28);
-  buffer.writeUInt16LE(numChannels * (bitsPerSample / 8), 32);
-  buffer.writeUInt16LE(bitsPerSample, 34);
-  buffer.write("data", 36);
-  buffer.writeUInt32LE(dataSize, 40);
-
-  return buffer;
-}
 
 // --------------------------------------------------------------------------- LLM
 

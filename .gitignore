@@ -68,3 +68,13 @@ server.log
 /release/
 /electron/dist/
 /.zscripts/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Unignore source adapter
+!src/lib/infrastructure/ai/local-adapter.ts

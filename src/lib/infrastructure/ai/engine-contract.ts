@@ -18,6 +18,7 @@ export interface TranscriptionEngine {
   transcribe(
     audioPath: string,
     language?: string,
+    modelId?: string,
   ): Promise<TranscriptionResult>;
 }
 

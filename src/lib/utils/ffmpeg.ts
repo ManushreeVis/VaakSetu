@@ -52,9 +52,17 @@ export const probeMedia = async (filePath: string): Promise<MediaProbe> => {
   };
 };
 
-/** Extract a 16kHz mono WAV audio track suitable for ASR. */
+/** Extract a 16kHz mono WAV audio track with vocal enhancement & loudness normalization for ASR. */
 export const extractAudioForAsr = async (filePath: string, outPath: string): Promise<string> => {
-  await runFfmpeg(["-i", filePath, "-vn", "-ac", "1", "-ar", "16000", "-f", "wav", outPath]);
+  await runFfmpeg([
+    "-i", filePath,
+    "-vn",
+    "-af", "highpass=f=80,lowpass=f=7500,volume=1.5,loudnorm=I=-16:TP=-1.5:LRA=11",
+    "-ac", "1",
+    "-ar", "16000",
+    "-f", "wav",
+    outPath,
+  ]);
   return outPath;
 };
 
@@ -80,8 +88,23 @@ export const burnSubtitlesIntoVideo = async (
   outPath: string,
   style = "FontSize=12,PrimaryColour=&H00FFFFFF&,OutlineColour=&H00000000&,BorderStyle=1,Outline=2,Shadow=1",
 ): Promise<string> => {
-  // Escape path for the subtitles filter (Windows-style colons need escaping on some systems).
-  const escaped = srtPath.replace(/'/g, "\\'").replace(/:/g, "\\:");
+  // Cross-platform path escaping for the ffmpeg `subtitles` filter.
+  //
+  // The subtitles filter uses libass which requires:
+  //  - Forward slashes (even on Windows — ffmpeg handles this)
+  //  - Windows drive colons escaped as "\:" (e.g. "C\:/path/to/file.srt")
+  //  - Single quotes escaped as "\'" (shell-level quoting)
+  //  - Square brackets escaped as "\[" "\]" (libass filter graph special chars)
+  //
+  // NOTE: We use path.resolve() to ensure absolute path before escaping.
+  const absPath = path.resolve(srtPath);
+  const escaped = absPath
+    .replace(/\\/g, "/")               // Windows backslashes → forward slashes
+    .replace(/^([A-Za-z]):/, "$1\\:")   // Escape Windows drive letter colon: C: → C\:
+    .replace(/'/g, "\\'")              // Single quote
+    .replace(/\[/g, "\\[")             // Square bracket open
+    .replace(/\]/g, "\\]");            // Square bracket close
+
   await runFfmpeg([
     "-i", videoPath,
     "-vf", `subtitles='${escaped}':force_style='${style}'`,
@@ -91,9 +114,45 @@ export const burnSubtitlesIntoVideo = async (
   return outPath;
 };
 
+/** Dub video with a translated audio track (replace audio or duck original). */
+export const dubVideo = async (
+  videoPath: string,
+  audioPath: string,
+  outPath: string,
+  duckOriginal = false,
+): Promise<string> => {
+  if (duckOriginal) {
+    await runFfmpeg([
+      "-i", videoPath,
+      "-i", audioPath,
+      "-filter_complex", "[0:a]volume=0.15[a0];[1:a]volume=1.0[a1];[a0][a1]amix=inputs=2:duration=longest[aout]",
+      "-map", "0:v:0",
+      "-map", "[aout]",
+      "-c:v", "copy",
+      "-c:a", "aac",
+      "-b:a", "192k",
+      "-shortest",
+      outPath,
+    ]);
+  } else {
+    await runFfmpeg([
+      "-i", videoPath,
+      "-i", audioPath,
+      "-map", "0:v:0",
+      "-map", "1:a:0",
+      "-c:v", "copy",
+      "-c:a", "aac",
+      "-b:a", "192k",
+      outPath,
+    ]);
+  }
+  return outPath;
+};
+
 export const ensureDir = async (dir: string) => fs.mkdir(dir, { recursive: true });
 
 export const withExtension = (filePath: string, ext: string): string => {
   const parsed = path.parse(filePath);
   return path.join(parsed.dir, `${parsed.name}.${ext.replace(/^\./, "")}`);
 };
+

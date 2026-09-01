@@ -101,7 +101,8 @@ async function main() {
   console.log("=================================================");
   console.log(`✓ Job ID          : ${result.jobId}`);
   console.log(`✓ Model Selected  : ${result.model}`);
-  console.log(`✓ Media Duration  : ${result.durationSec.toFixed(2)}s`);
+  console.log(`✓ Media Duration  : ${(result.durationSec ?? 0).toFixed(2)}s`);
+
   console.log(`✓ Transcribed Text: "${result.transcript}"`);
   console.log(`✓ Translated Text : "${result.translatedText}"`);
   console.log(`✓ Subtitle Cues   : ${result.segments.length} segments`);

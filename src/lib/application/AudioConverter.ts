@@ -32,11 +32,14 @@ export const AudioConverter = {
       kind: "convert",
       status: "running",
       progress: 20,
+      sourceLang: "auto",
+      targetLang: "auto",
       inputName: request.inputName,
       inputPath: request.inputPath,
       model: "ffmpeg",
       modelReason: "ffmpeg audio transcode (no model required).",
     });
+
 
     try {
       const baseName = path.parse(request.inputName).name;

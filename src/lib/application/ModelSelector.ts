@@ -51,15 +51,14 @@ export const ModelSelector = {
     }
 
     if (ctx.role === "transcription") {
-      const longMedia = (ctx.durationSec ?? 0) > 300;
-      const choice = longMedia
-        ? candidates.find((m) => m.id === "whisper-medium") ?? candidates[0]
-        : candidates.find((m) => m.id === "whisper-small") ?? candidates[0];
+      // Primary: whisper-large-v3-turbo (SOTA accuracy for Indic dialects & noisy audio)
+      const choice =
+        candidates.find((m) => m.id === "whisper-large-v3-turbo") ??
+        candidates.find((m) => m.id === "whisper-medium") ??
+        candidates[0];
       return {
         modelId: choice.id,
-        reason: longMedia
-          ? `Media is long (${Math.round((ctx.durationSec ?? 0) / 60)} min) — selected ${choice.name} for higher accuracy on extended recordings.`
-          : `Short clip — selected ${choice.name} for fast on-device transcription.`,
+        reason: `Auto-selected ${choice.name} — SOTA accuracy for regional Indic speech & noisy audio.`,
       };
     }
 

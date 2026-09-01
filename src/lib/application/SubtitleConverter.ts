@@ -9,10 +9,13 @@ export const SubtitleConverter = {
       kind: "convert",
       status: "running",
       progress: 30,
+      sourceLang: "auto",
+      targetLang: "auto",
       inputText: opts.content,
       model: "subtitle-converter",
       modelReason: "Pure-function converter (no model required).",
     });
+
     try {
       const result = convertSubtitles(opts.content, opts.to);
       await JobRepository.update(job.id, {

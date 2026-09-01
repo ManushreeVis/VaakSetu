@@ -223,6 +223,7 @@ For complete hardware sizing, GPU requirements, and step-by-step setup, see [doc
 
 ## 📚 Project Documentation
 
+- 📖 **[Startup Guide & User Manual](docs/STARTUP_GUIDE.md)**: Complete step-by-step instructions for running the app end-to-end.
 - 📐 **[Architecture Guide](docs/ARCHITECTURE.md)**: DDD breakdown, engine contracts, and domain layers.
 - 🚀 **[Deployment Guide](docs/DEPLOYMENT.md)**: On-premises hardware requirements, offline model setup, and production hardening.
 - 📦 **[Desktop Build Guide](docs/BUILD.md)**: Compiling and packaging standalone desktop binaries (`.exe` / `.dmg`).

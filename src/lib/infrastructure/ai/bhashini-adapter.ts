@@ -9,7 +9,19 @@
 import fs from "fs/promises";
 import path from "path";
 import { LANGUAGES, languageLabel } from "@/lib/domain/languages";
+import {
+  buildSegments,
+  splitTextForTts,
+  detectTtsLang,
+  createSilentWavBuffer,
+} from "./ai-utils";
+import {
+  LocalTranslationEngine,
+  LocalTranscriptionEngine,
+  LocalTtsEngine,
+} from "./local-adapter";
 import type {
+
   TranslationRequest,
   TranslationResult,
   TranscriptionResult,
@@ -244,70 +256,56 @@ export const BhashiniTranslationEngine: TranslationEngine = {
     const sLang = sourceLang === "auto" ? "hi" : sourceLang;
     const tLang = targetLang;
 
-    // 1. Try Bhashini / AI4Bharat Dhruva API
+    // 1. PRIMARY: Local AI Engine (IndicTrans2 / NLLB — fully offline, no API keys)
+    //    This is the core engine for NGO deployment. No internet required.
+    try {
+      const localRes = await LocalTranslationEngine.translate(request);
+      if (localRes?.text && localRes.text.trim()) {
+        return localRes;
+      }
+    } catch {
+      // Local AI not running, proceed to optional online fallbacks
+    }
+
+    // ── Optional online fallbacks (only used if local AI is not available) ──
+
+    // 2. Try Bhashini / AI4Bharat Dhruva API (free, requires signup)
     const bhashiniRes = await translateViaBhashini(text, sLang, tLang);
     if (bhashiniRes) {
       return {
         text: bhashiniRes,
         model: "indictrans2",
-        modelReason: "AI4Bharat IndicTrans2 via Bhashini Dhruva NMT API.",
+        modelReason: "AI4Bharat IndicTrans2 via Bhashini Dhruva NMT API (online fallback).",
         detectedSourceLang: sourceLang === "auto" ? sLang : sourceLang,
       };
     }
 
-    // 2. Try Hugging Face Inference API (IndicTrans2)
+    // 3. Try Hugging Face Inference API (requires HF_TOKEN)
     const hfRes = await translateViaHuggingFace(text, sLang, tLang);
     if (hfRes) {
       return {
         text: hfRes,
         model: "indictrans2",
-        modelReason: "AI4Bharat IndicTrans2 via Hugging Face Serverless API.",
+        modelReason: "AI4Bharat IndicTrans2 via Hugging Face Serverless API (online fallback).",
         detectedSourceLang: sourceLang === "auto" ? sLang : sourceLang,
       };
     }
 
-    // 3. Fallback to Gemini / LLM prompted as IndicTrans2
+    // 4. Last resort: Gemini LLM (requires GEMINI_API_KEY)
     const geminiRes = await translateViaGemini(text, sourceLang, targetLang);
     return {
       text: geminiRes,
       model: "indictrans2",
-      modelReason: "IndicTrans2 neural translation pipeline (multilingual mr/hi/en).",
+      modelReason: "LLM-based translation (online fallback — start local AI for offline use).",
       detectedSourceLang: sourceLang === "auto" ? undefined : sourceLang,
     };
   },
 };
 
+
 // --------------------------------------------------------------------------- Transcription Engine (ASR)
 
-const buildSegments = (text: string, durationSec?: number): TranscriptionSegment[] => {
-  const clean = text.replace(/\s+/g, " ").trim();
-  if (!clean) return [];
-  const sentences = clean
-    .split(/(?<=[।.!?])\s+|(?<=।)/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const chunks: string[] = [];
-  let buf = "";
-  for (const s of sentences) {
-    if ((buf + " " + s).trim().length > 84 && buf) {
-      chunks.push(buf.trim());
-      buf = s;
-    } else {
-      buf = (buf ? buf + " " : "") + s;
-    }
-  }
-  if (buf.trim()) chunks.push(buf.trim());
 
-  const total = durationSec && durationSec > 0 ? durationSec : Math.max(6, chunks.length * 4);
-  const charTotal = chunks.reduce((a, c) => a + c.length, 0) || 1;
-  let cursor = 0;
-  return chunks.map((c) => {
-    const dur = Math.max(1.2, (c.length / charTotal) * total);
-    const seg: TranscriptionSegment = { start: cursor, end: cursor + dur, text: c };
-    cursor += dur;
-    return seg;
-  });
-};
 
 async function transcribeViaBhashini(audioBase64: string, language: string): Promise<string | null> {
   const sLang = language && language !== "auto" ? language : "hi";
@@ -355,12 +353,27 @@ async function transcribeViaBhashini(audioBase64: string, language: string): Pro
 }
 
 export const BhashiniTranscriptionEngine: TranscriptionEngine = {
-  async transcribe(audioPath: string, language?: string): Promise<TranscriptionResult> {
-    const buffer = await fs.readFile(audioPath);
-    const base64 = buffer.toString("base64");
+  async transcribe(
+    audioPath: string,
+    language?: string,
+    modelId?: string,
+  ): Promise<TranscriptionResult> {
     const lang = language && language !== "auto" ? language : "hi";
 
-    // 1. Try Bhashini / AI4Bharat ASR
+    // 1. PRIMARY: Local Whisper ASR (faster-whisper on local machine)
+    try {
+      const localRes = await LocalTranscriptionEngine.transcribe(audioPath, language, modelId);
+      if (localRes?.text && localRes.text.trim()) {
+        return localRes;
+      }
+    } catch (localErr: any) {
+      console.warn(`[Transcription] Local Whisper ASR notice: ${localErr?.message || localErr}`);
+    }
+
+    const buffer = await fs.readFile(audioPath);
+    const base64 = buffer.toString("base64");
+
+    // 2. Try Bhashini / AI4Bharat ASR (online fallback)
     const bhashiniText = await transcribeViaBhashini(base64, lang);
     if (bhashiniText) {
       return {
@@ -371,11 +384,11 @@ export const BhashiniTranscriptionEngine: TranscriptionEngine = {
       };
     }
 
-    // 2. Fallback to Gemini Multimodal Audio transcription
+    // 3. Fallback to Gemini Multimodal Audio transcription (online fallback)
     const apiKey = getGeminiApiKey();
     if (apiKey) {
       const prompt = `Transcribe all spoken text in this audio file clearly in ${languageLabel(lang)}. Output ONLY the transcribed text.`;
-      const models = ["gemini-3.5-flash", "gemini-3.5-flash-lite"];
+      const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
       for (const m of models) {
         try {
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`, {
@@ -392,7 +405,7 @@ export const BhashiniTranscriptionEngine: TranscriptionEngine = {
               ],
               generationConfig: { temperature: 0.1 },
             }),
-            signal: AbortSignal.timeout(15000),
+            signal: AbortSignal.timeout(60000),
           });
 
           if (res.ok) {
@@ -413,45 +426,16 @@ export const BhashiniTranscriptionEngine: TranscriptionEngine = {
       }
     }
 
-    // 3. Fallback demo transcription
-    const demoText = lang === "mr"
-      ? "वाक्सेतु प्रकल्पामध्ये आपले स्वागत आहे. हे स्थानिक भाषांतर तंत्रज्ञान आहे."
-      : "वाक्सेतु में आपका स्वागत है। यह एक बहुभाषी अनुवाद प्रणाली है।";
-    return {
-      text: demoText,
-      segments: buildSegments(demoText),
-      detectedLanguage: lang,
-      model: "whisper-small",
-    };
+    throw new Error(
+      "Speech transcription failed. Please ensure the local AI service is running on port 8000 (`./scripts/start-local-ai.sh`)."
+    );
   },
 };
 
+
 // --------------------------------------------------------------------------- TTS Engine (IndicTTS + Google Fallback)
 
-function splitTextForTts(text: string, maxLen = 190): string[] {
-  const sentences = text.replace(/\s+/g, " ").split(/(?<=[।.!?])\s+/);
-  const chunks: string[] = [];
-  let current = "";
-  for (const sentence of sentences) {
-    if ((current + " " + sentence).trim().length > maxLen) {
-      if (current.trim()) chunks.push(current.trim());
-      current = sentence;
-    } else {
-      current = (current ? current + " " : "") + sentence;
-    }
-  }
-  if (current.trim()) chunks.push(current.trim());
-  return chunks.length ? chunks : [text];
-}
 
-function detectTtsLang(text: string, requestedLang?: string): string {
-  const norm = (requestedLang ?? "").trim().toLowerCase();
-  if (norm === "mr" || norm.startsWith("mr") || norm.includes("marathi")) return "mr";
-  if (norm === "hi" || norm.startsWith("hi") || norm.includes("hindi")) return "hi";
-  if (norm === "en" || norm.startsWith("en") || norm.includes("english")) return "en";
-  if (/[\u0900-\u097F]/.test(text)) return "hi";
-  return "en";
-}
 
 async function synthesizeViaBhashini(text: string, language: string): Promise<Buffer | null> {
   const sLang = detectTtsLang(text, language);
@@ -502,11 +486,21 @@ async function synthesizeViaBhashini(text: string, language: string): Promise<Bu
 
 export const BhashiniTtsEngine: TtsEngine = {
   async synthesize(text: string, language: string): Promise<Buffer> {
-    // 1. Try Bhashini IndicTTS
+    // 1. Try Local Neural TTS (Edge TTS with Marathi, Hindi, English neural voices)
+    try {
+      const localAudio = await LocalTtsEngine.synthesize(text, language);
+      if (localAudio && localAudio.length > 0) {
+        return localAudio;
+      }
+    } catch {
+      // Local AI not running or busy, proceed to fallbacks
+    }
+
+    // 2. Try Bhashini IndicTTS
     const bhashiniAudio = await synthesizeViaBhashini(text, language);
     if (bhashiniAudio) return bhashiniAudio;
 
-    // 2. High-speed Google Indic TTS synthesis
+    // 3. High-speed Google Indic TTS synthesis
     const tl = detectTtsLang(text, language);
     const chunks = splitTextForTts(text);
     try {
@@ -531,35 +525,12 @@ export const BhashiniTtsEngine: TtsEngine = {
       // fallback
     }
 
-    // 3. Clean silent WAV fallback
+    // 4. Clean silent WAV fallback
     return createSilentWavBuffer(2.0);
   },
 };
 
-function createSilentWavBuffer(durationSec: number): Buffer {
-  const sampleRate = 22050;
-  const numChannels = 1;
-  const bitsPerSample = 16;
-  const numSamples = Math.floor(sampleRate * durationSec);
-  const dataSize = numSamples * numChannels * (bitsPerSample / 8);
-  const buffer = Buffer.alloc(44 + dataSize);
 
-  buffer.write("RIFF", 0);
-  buffer.writeUInt32LE(36 + dataSize, 4);
-  buffer.write("WAVE", 8);
-  buffer.write("fmt ", 12);
-  buffer.writeUInt32LE(16, 16);
-  buffer.writeUInt16LE(1, 20);
-  buffer.writeUInt16LE(numChannels, 22);
-  buffer.writeUInt32LE(sampleRate, 24);
-  buffer.writeUInt32LE(sampleRate * numChannels * (bitsPerSample / 8), 28);
-  buffer.writeUInt16LE(numChannels * (bitsPerSample / 8), 32);
-  buffer.writeUInt16LE(bitsPerSample, 34);
-  buffer.write("data", 36);
-  buffer.writeUInt32LE(dataSize, 40);
-
-  return buffer;
-}
 
 // --------------------------------------------------------------------------- LLM Engine (IndicLLM)
 

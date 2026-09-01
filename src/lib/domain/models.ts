@@ -35,32 +35,57 @@ export interface ModelDescriptor {
   note: string;
 }
 
+/**
+ * All 22+ IndicTrans2-supported language codes.
+ * Used to correctly scope model language support in the registry.
+ */
+const ALL_INDIC_LANGS = [
+  "mr", "hi", "en", "bn", "gu", "ta", "te", "kn", "ml",
+  "pa", "or", "ur", "as", "sa", "sd", "ne", "bho", "mai",
+  "dgo", "kok", "kas", "mni", "sat",
+];
+
 export const MODEL_REGISTRY: ModelDescriptor[] = [
+  // ── Translation ─────────────────────────────────────────────────────────
   {
     id: "indictrans2",
     role: "translation",
-    name: "IndicTrans2",
+    name: "IndicTrans2 (Distilled)",
     provider: "AI4Bharat",
     license: "MIT",
     available: true,
-    quality: 0.96,
-    speed: 0.78,
+    quality: 0.90,
+    speed: 0.82,
     footprintGb: 2.4,
-    languages: ["mr", "hi", "en"],
-    note: "State-of-the-art open-source translation for 22+ Indic languages.",
+    languages: ALL_INDIC_LANGS,
+    note: "200M–320M distilled models for devices with <6GB VRAM. Fast, offline.",
   },
   {
-    id: "whisper-small",
+    id: "indictrans2-1b",
+    role: "translation",
+    name: "IndicTrans2 (1B Full)",
+    provider: "AI4Bharat",
+    license: "MIT",
+    available: true,
+    quality: 0.97,
+    speed: 0.62,
+    footprintGb: 5.5,
+    languages: ALL_INDIC_LANGS,
+    note: "1B parameter models auto-selected when ≥6GB VRAM available. Best Indic quality.",
+  },
+  // ── Transcription (ASR) ─────────────────────────────────────────────────
+  {
+    id: "whisper-large-v3-turbo",
     role: "transcription",
-    name: "Whisper Small",
+    name: "Whisper Large v3 Turbo",
     provider: "OpenAI (open-source)",
     license: "MIT",
     available: true,
-    quality: 0.82,
-    speed: 0.9,
-    footprintGb: 1.0,
-    languages: ["mr", "hi", "en"],
-    note: "Fast on-device ASR; good for short clips and field recordings.",
+    quality: 0.96,
+    speed: 0.88,
+    footprintGb: 1.6,
+    languages: ALL_INDIC_LANGS,
+    note: "SOTA ASR model optimized for Indian regional dialects, noisy audio & accents.",
   },
   {
     id: "whisper-medium",
@@ -72,22 +97,37 @@ export const MODEL_REGISTRY: ModelDescriptor[] = [
     quality: 0.91,
     speed: 0.62,
     footprintGb: 3.2,
-    languages: ["mr", "hi", "en"],
-    note: "Higher-accuracy ASR for noisy or long recordings.",
+    languages: ALL_INDIC_LANGS,
+    note: "Higher-accuracy ASR for noisy or long recordings. GPU-accelerated on CUDA.",
   },
+  {
+    id: "whisper-small",
+    role: "transcription",
+    name: "Whisper Small",
+    provider: "OpenAI (open-source)",
+    license: "MIT",
+    available: true,
+    quality: 0.82,
+    speed: 0.90,
+    footprintGb: 1.0,
+    languages: ALL_INDIC_LANGS,
+    note: "Fast on-device ASR; GPU-accelerated on CUDA. Good for short clips.",
+  },
+  // ── TTS ─────────────────────────────────────────────────────────────────
   {
     id: "ai4bharat-tts",
     role: "tts",
-    name: "AI4Bharat TTS",
-    provider: "AI4Bharat",
-    license: "MIT",
+    name: "Neural TTS (Edge + gTTS)",
+    provider: "Microsoft / Google",
+    license: "Free tier",
     available: true,
-    quality: 0.9,
-    speed: 0.8,
-    footprintGb: 1.6,
-    languages: ["mr", "hi", "en"],
-    note: "Natural Indic-accent voices; runs fully on-prem.",
+    quality: 0.90,
+    speed: 0.80,
+    footprintGb: 0.0, // edge_tts is API-based; no local VRAM
+    languages: ["mr", "hi", "en", "bn", "gu", "ta", "te", "kn", "ml", "ur"],
+    note: "Neural Indic-accent voices via Edge TTS; gTTS offline fallback.",
   },
+  // ── LLM ─────────────────────────────────────────────────────────────────
   {
     id: "indic-llm",
     role: "llm",
@@ -96,10 +136,10 @@ export const MODEL_REGISTRY: ModelDescriptor[] = [
     license: "MIT",
     available: true,
     quality: 0.88,
-    speed: 0.7,
+    speed: 0.70,
     footprintGb: 4.5,
     languages: ["mr", "hi", "en"],
-    note: "Open-source LLM used for summarization, chat, and document QA.",
+    note: "Open-source LLM for summarization, chat, and document QA.",
   },
 ];
 

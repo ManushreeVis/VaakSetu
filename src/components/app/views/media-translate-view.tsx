@@ -19,12 +19,16 @@ import {
   ArrowRight,
   Film,
   Check,
+  Cpu,
+  Sparkles,
+  Tv,
 } from "lucide-react";
 import { ViewHeader } from "../shared/view-header";
 import { LanguageSelect } from "../shared/language-select";
 import { UploadDropzone } from "../shared/upload-dropzone";
 import { ModelBadge } from "../shared/model-badge";
 import { AudioPlayer } from "../shared/audio-player";
+import { TranslatedVideoPlayer } from "../shared/translated-video-player";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -55,9 +59,15 @@ interface MediaResult {
   transcript: string;
   translatedText: string;
   segments: MediaSegment[];
+  sourceSegments?: MediaSegment[];
   outputAudioPath?: string;
   outputSrt?: string;
   outputVtt?: string;
+  sourceSrt?: string;
+  sourceVtt?: string;
+  inputVideoName?: string;
+  dubbedVideoName?: string;
+  hasVideo?: boolean;
   model: string;
   modelReason: string;
   durationSec?: number;
@@ -65,12 +75,13 @@ interface MediaResult {
 }
 
 const STATUS_MESSAGES = [
-  "Extracting audio…",
-  "Transcribing speech…",
-  "Translating to target language…",
-  "Generating translated voice…",
-  "Building subtitles…",
-  "Finalizing outputs…",
+  "Extracting audio track from media…",
+  "Transcribing spoken speech with Whisper ASR…",
+  "Translating sentences with IndicTrans2 300M…",
+  "Synthesizing high-fidelity neural voice…",
+  "Generating timed SRT & WebVTT subtitles…",
+  "Dubbing video container & multiplexing audio…",
+  "Finalizing media artifacts…",
 ];
 
 const getExt = (name: string): string => name.split(".").pop() ?? "";
@@ -158,24 +169,24 @@ const OptionsCard = ({
       <p className="text-sm font-medium">Output options</p>
       <div className="flex items-center justify-between gap-3">
         <div className="space-y-0.5">
-          <Label className="text-sm">Translated voice (TTS)</Label>
-          <p className="text-xs text-muted-foreground">Synthesize spoken audio in the target language.</p>
+          <Label className="text-sm">Translated voice (Neural TTS)</Label>
+          <p className="text-xs text-muted-foreground">Synthesize spoken audio & dub the video track.</p>
         </div>
         <Switch checked={voice} onCheckedChange={setVoice} aria-label="Generate translated voice" />
       </div>
       <Separator />
       <div className="flex items-center justify-between gap-3">
         <div className="space-y-0.5">
-          <Label className="text-sm">Subtitles (SRT + VTT)</Label>
-          <p className="text-xs text-muted-foreground">Generate timed subtitle files for video.</p>
+          <Label className="text-sm">Subtitles & Captions (SRT + VTT)</Label>
+          <p className="text-xs text-muted-foreground">Generate timed interactive subtitle cues.</p>
         </div>
         <Switch checked={subtitles} onCheckedChange={setSubtitles} aria-label="Generate subtitles" />
       </div>
       <Separator />
       <div className="flex items-center justify-between gap-3">
         <div className="space-y-0.5">
-          <Label className="text-sm">Auto-select model</Label>
-          <p className="text-xs text-muted-foreground">Let the engine choose the best model.</p>
+          <Label className="text-sm">IndicTrans2 Neural Engine</Label>
+          <p className="text-xs text-muted-foreground">AI4Bharat 300M local model with Apple MPS acceleration.</p>
         </div>
         <Switch checked={autoModel} onCheckedChange={setAutoModel} aria-label="Auto select model" />
       </div>
@@ -183,225 +194,99 @@ const OptionsCard = ({
   </Card>
 );
 
-/** Indeterminate-style progress with rotating status message. */
-const ProgressBlock = ({ message, tick }: { message: string; tick: number }) => {
-  const value = ((tick % 9) + 1) * 10; // 10 → 90, then wrap
+/** 5-Phase Processing Stepper with real-time status indication */
+const PIPELINE_PHASES = [
+  {
+    step: 1,
+    title: "1. Video ➔ Extract Audio",
+    desc: "FFmpeg demuxes 16kHz mono audio track from video container",
+    icon: Film,
+  },
+  {
+    step: 2,
+    title: "2. Audio ➔ Extract Text",
+    desc: "Whisper ASR extracts speech segments & precise timestamps",
+    icon: Clapperboard,
+  },
+  {
+    step: 3,
+    title: "3. Text ➔ Text Conversion",
+    desc: "IndicTrans2 translates sentences in context-aware batches",
+    icon: Languages,
+  },
+  {
+    step: 4,
+    title: "4. Converted Text ➔ Audio",
+    desc: "Neural TTS synthesizes target language voice per segment",
+    icon: Volume2,
+  },
+  {
+    step: 5,
+    title: "5. Audio ➔ Integrate with Video",
+    desc: "Matches timestamps, mixes audio track & muxes dubbed video",
+    icon: Tv,
+  },
+];
+
+const ProgressBlock = ({ tick }: { message: string; tick: number }) => {
+  const currentStep = Math.min(5, Math.floor(tick / 6) + 1);
+  const percent = Math.min(95, Math.round((tick / 30) * 100));
+
   return (
-    <Card>
-      <CardContent className="space-y-4 p-6">
-        <div className="flex items-center gap-3">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          <div className="space-y-0.5">
-            <p className="text-sm font-medium">{message}</p>
-            <p className="text-xs text-muted-foreground">Processing usually takes 15–60 seconds.</p>
+    <Card className="border-primary/40 shadow-xl bg-card/90 backdrop-blur-md">
+      <CardContent className="space-y-5 p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <div>
+              <p className="text-sm font-semibold">Executing 5-Phase Media Translation Pipeline</p>
+              <p className="text-xs text-muted-foreground">
+                Phase {currentStep} of 5 active · Running offline local models
+              </p>
+            </div>
           </div>
+          <Badge variant="outline" className="font-mono text-xs px-2.5 py-1">
+            {percent}%
+          </Badge>
         </div>
-        <Progress value={value} className="h-2" />
-      </CardContent>
-    </Card>
-  );
-};
 
-/** Burn the SRT subtitles into the source video (hardcoded captions) and download. */
-const BurnCaptionsButton = ({ jobId, target }: { jobId: string; target: string }) => {
-  const [burning, setBurning] = useState(false);
-  const [done, setDone] = useState(false);
+        <Progress value={percent} className="h-2" />
 
-  const burn = async () => {
-    setBurning(true);
-    try {
-      const res = await fetch(`/api/media/${jobId}/burn`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "Failed to burn captions.");
-      // Trigger download of the burned video.
-      downloadUrl(`/api/download/${jobId}/${data.downloadName}`, data.downloadName);
-      setDone(true);
-      toast.success(`Burned captions into video (${data.downloadName}).`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to burn captions.");
-    } finally {
-      setBurning(false);
-    }
-  };
+        {/* 5-Phase Visual Stepper */}
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-5 pt-2">
+          {PIPELINE_PHASES.map((p) => {
+            const isDone = currentStep > p.step;
+            const isCurrent = currentStep === p.step;
+            const Icon = p.icon;
 
-  return (
-    <Button
-      size="sm"
-      variant="default"
-      className="gap-1.5"
-      onClick={burn}
-      disabled={burning}
-    >
-      {burning ? (
-        <><Loader2 className="h-4 w-4 animate-spin" /> Burning captions…</>
-      ) : done ? (
-        <><Check className="h-4 w-4" /> Burned — download again</>
-      ) : (
-        <><Film className="h-4 w-4" /> Burn into video</>
-      )}
-    </Button>
-  );
-};
-
-const ResultsTabs = ({ result, target }: { result: MediaResult; target: string }) => {
-  const audioName = result.outputAudioPath ? basename(result.outputAudioPath) : null;
-  const audioUrl = audioName ? `/api/download/${result.jobId}/${audioName}` : null;
-  const baseName = result.jobId;
-  const duration = formatDuration(result.durationSec);
-  const hasSubs = Boolean(result.outputSrt || result.outputVtt);
-  const hasVoice = Boolean(audioUrl);
-
-  const downloadAll = async () => {
-    if (result.outputSrt) {
-      downloadBlob(result.outputSrt, `${baseName}.srt`, "application/x-subrip");
-      await new Promise((r) => setTimeout(r, 400));
-    }
-    if (result.outputVtt) {
-      downloadBlob(result.outputVtt, `${baseName}.vtt`, "text/vtt");
-      await new Promise((r) => setTimeout(r, 400));
-    }
-    if (audioUrl && audioName) downloadUrl(audioUrl, audioName);
-    toast.success("Downloaded all available artifacts.");
-  };
-
-  return (
-    <Card>
-      <CardContent className="p-4 sm:p-6">
-        <Tabs defaultValue="translation">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <TabsList className="w-fit">
-              <TabsTrigger value="translation" className="gap-1.5">
-                <Languages className="h-4 w-4" /> Translation
-              </TabsTrigger>
-              <TabsTrigger value="subtitles" className="gap-1.5" disabled={!hasSubs}>
-                <Captions className="h-4 w-4" /> Subtitles
-              </TabsTrigger>
-              <TabsTrigger value="voice" className="gap-1.5" disabled={!hasVoice}>
-                <Volume2 className="h-4 w-4" /> Voice
-              </TabsTrigger>
-              <TabsTrigger value="segments" className="gap-1.5">
-                <ListTree className="h-4 w-4" /> Segments
-              </TabsTrigger>
-            </TabsList>
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={downloadAll}>
-              <Download className="h-4 w-4" /> Download all
-            </Button>
-          </div>
-
-          <TabsContent value="translation" className="mt-4 space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <ModelBadge modelId={result.model} />
-              {duration && (
-                <Badge variant="outline" className="gap-1 text-[11px]">
-                  <Clock className="h-3 w-3" /> {duration}
-                </Badge>
-              )}
-              <Badge variant="outline" className="text-[11px]">→ {languageLabel(target)}</Badge>
-            </div>
-            <div className="rounded-lg border bg-primary/5 p-4">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Translated text
-              </p>
-              <p className="whitespace-pre-wrap text-base leading-relaxed" lang={target}>
-                {result.translatedText || "—"}
-              </p>
-            </div>
-            <Collapsible>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-1.5">
-                  <FileText className="h-4 w-4" /> Show original transcript
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="rounded-lg border bg-muted/30 p-3">
-                  <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                    {result.transcript || "—"}
-                  </p>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-            {result.modelReason && (
-              <p className="text-[11px] italic text-muted-foreground">{result.modelReason}</p>
-            )}
-          </TabsContent>
-
-          <TabsContent value="subtitles" className="mt-4 space-y-3">
-            {hasSubs ? (
-              <>
-                <div className="flex flex-wrap gap-2">
-                  {result.outputSrt && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5"
-                      onClick={() => downloadBlob(result.outputSrt!, `${baseName}.srt`, "application/x-subrip")}
-                    >
-                      <Download className="h-4 w-4" /> Download SRT
-                    </Button>
+            return (
+              <div
+                key={p.step}
+                className={`rounded-lg border p-3 transition-all ${
+                  isDone
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                    : isCurrent
+                    ? "border-primary bg-primary/10 text-primary shadow-sm"
+                    : "border-muted bg-muted/20 text-muted-foreground opacity-60"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 mb-1">
+                  {isDone ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : isCurrent ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  ) : (
+                    <Icon className="h-3.5 w-3.5" />
                   )}
-                  {result.outputVtt && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5"
-                      onClick={() => downloadBlob(result.outputVtt!, `${baseName}.vtt`, "text/vtt")}
-                    >
-                      <Download className="h-4 w-4" /> Download VTT
-                    </Button>
-                  )}
-                  <BurnCaptionsButton jobId={result.jobId} target={target} />
+                  <span className="text-xs font-semibold">{p.title.split(" ➔ ")[0]}</span>
                 </div>
-                <ScrollArea className="h-96 rounded-lg border">
-                  <pre className="bg-muted/30 p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
-                    {result.outputSrt ?? result.outputVtt ?? "No subtitles generated."}
-                  </pre>
-                </ScrollArea>
-              </>
-            ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                No subtitles were generated for this run.
-              </p>
-            )}
-          </TabsContent>
-
-          <TabsContent value="voice" className="mt-4 space-y-3">
-            {audioUrl && audioName ? (
-              <div className="space-y-3">
-                <AudioPlayer src={audioUrl} label={`Translated voice · ${languageNative(target)}`} />
-                <Button asChild size="sm" variant="outline" className="gap-1.5">
-                  <a href={audioUrl} download={audioName}>
-                    <Download className="h-4 w-4" /> Download audio
-                  </a>
-                </Button>
+                <p className="text-[11px] line-clamp-2 leading-tight">
+                  {p.title.split(" ➔ ")[1] || p.title}
+                </p>
               </div>
-            ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                No voice was generated for this run.
-              </p>
-            )}
-          </TabsContent>
-
-          <TabsContent value="segments" className="mt-4">
-            {result.segments?.length ? (
-              <ScrollArea className="h-96 rounded-lg border">
-                <ol className="divide-y">
-                  {result.segments.map((seg, i) => (
-                    <li key={i} className="flex gap-3 p-3">
-                      <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">
-                        {formatTimestamp(seg.start)} → {formatTimestamp(seg.end)}
-                      </Badge>
-                      <span className="text-sm">{seg.text}</span>
-                    </li>
-                  ))}
-                </ol>
-              </ScrollArea>
-            ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                No segment data available.
-              </p>
-            )}
-          </TabsContent>
-        </Tabs>
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );
@@ -416,28 +301,21 @@ export function MediaTranslateView() {
     autoModel,
     setAutoModel,
   } = useAppStore();
-  const [source, setSource] = useState(defaultSourceLang);
-  const [target, setTarget] = useState(defaultTargetLang);
+  const [source, setSource] = useState(defaultSourceLang && defaultSourceLang !== "auto" ? defaultSourceLang : "mr");
+  const [target, setTarget] = useState(defaultTargetLang && defaultTargetLang !== "auto" ? defaultTargetLang : "en");
   const [file, setFile] = useState<File | null>(null);
   const [voice, setVoice] = useState(true);
   const [subtitles, setSubtitles] = useState(true);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<MediaResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [statusIdx, setStatusIdx] = useState(0);
   const [tick, setTick] = useState(0);
 
-  // Rotating status messages + progress tick while loading.
+  // Progress tick while loading.
   useEffect(() => {
     if (!loading) return;
-    const msgTimer = setInterval(() => {
-      setStatusIdx((i) => (i + 1) % STATUS_MESSAGES.length);
-    }, 3500);
-    const tickTimer = setInterval(() => setTick((t) => t + 1), 700);
-    return () => {
-      clearInterval(msgTimer);
-      clearInterval(tickTimer);
-    };
+    const tickTimer = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(tickTimer);
   }, [loading]);
 
   const onFile = useCallback((incoming: File) => {
@@ -459,7 +337,6 @@ export function MediaTranslateView() {
     setLoading(true);
     setError(null);
     setResult(null);
-    setStatusIdx(0);
     setTick(0);
     setDefaultSourceLang(source);
     setDefaultTargetLang(target);
@@ -474,7 +351,7 @@ export function MediaTranslateView() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "Media translation failed.");
       setResult(data as MediaResult);
-      toast.success("Translation complete.");
+      toast.success("5-Phase Video translation complete!");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Media translation failed.");
       toast.error("Translation failed.");
@@ -489,20 +366,37 @@ export function MediaTranslateView() {
     setError(null);
   };
 
+  const isVideoFile = file ? getCategory(getExt(file.name)) === "video" : result?.hasVideo;
+
   return (
     <div className="space-y-6">
       <ViewHeader
         icon={Clapperboard}
-        title="Audio & Video Translation"
+        title="5-Phase Audio & Video Translation"
         nativeTitle="ध्वनी व व्हिडिओ भाषांतर"
-        subtitle="Transcribe speech, translate, and generate voice + subtitles from any media file."
+        subtitle="End-to-end multi-phase pipeline: Audio Extraction ➔ Whisper ASR ➔ IndicTrans2 NMT ➔ Neural TTS ➔ FFmpeg Dubbed Video Integration."
       />
+
+      {/* Engine Status Banner */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card/60 px-4 py-2.5 backdrop-blur-sm">
+        <div className="flex items-center gap-2 text-xs">
+          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 gap-1.5 py-1">
+            <Cpu className="h-3.5 w-3.5" /> Local Engine Active
+          </Badge>
+          <span className="text-muted-foreground">
+            IndicTrans2 Neural Engine · Whisper ASR (int8) · Edge Neural TTS · FFmpeg Multi-track Muxing
+          </span>
+        </div>
+        <Badge variant="secondary" className="text-[11px] font-mono">
+          Device: Apple Silicon (MPS / CPU)
+        </Badge>
+      </div>
 
       {/* Language selector row */}
       <Card>
         <CardContent className="flex flex-col items-stretch gap-3 p-4 sm:flex-row sm:items-center">
           <div className="flex-1">
-            <Label className="mb-1.5 block text-xs text-muted-foreground">From</Label>
+            <Label className="mb-1.5 block text-xs text-muted-foreground">From (Source Language)</Label>
             <LanguageSelect
               variant="source"
               value={source}
@@ -515,7 +409,7 @@ export function MediaTranslateView() {
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="flex-1">
-            <Label className="mb-1.5 block text-xs text-muted-foreground">To</Label>
+            <Label className="mb-1.5 block text-xs text-muted-foreground">To (Target Language)</Label>
             <LanguageSelect
               variant="target"
               value={target}
@@ -545,23 +439,35 @@ export function MediaTranslateView() {
           />
         </div>
 
-        {/* Action card */}
+        {/* 5-Phase Pipeline Overview Card */}
         <Card>
           <CardContent className="flex h-full flex-col gap-4 p-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">Pipeline</p>
+              <p className="text-sm font-medium">5-Phase Pipeline Architecture</p>
               <Badge variant="outline" className="text-[11px]">
                 {languageLabel(source)} → {languageLabel(target)}
               </Badge>
             </div>
             <div className="space-y-2 rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
               <p className="flex items-center gap-1.5">
-                <Clapperboard className="h-3.5 w-3.5 text-primary" />
-                ASR → Translate → TTS + Subtitles
+                <Film className="h-3.5 w-3.5 text-primary shrink-0" />
+                <strong>1. Video ➔ Extract Audio:</strong> FFmpeg audio demuxing to 16kHz WAV.
               </p>
               <p className="flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5 text-primary" />
-                First-time processing may take up to a minute.
+                <Clapperboard className="h-3.5 w-3.5 text-primary shrink-0" />
+                <strong>2. Audio ➔ Extract Text:</strong> Whisper ASR recognizes speech & timestamps.
+              </p>
+              <p className="flex items-center gap-1.5">
+                <Languages className="h-3.5 w-3.5 text-primary shrink-0" />
+                <strong>3. Text ➔ Text Conversion:</strong> IndicTrans2 translates batched cues.
+              </p>
+              <p className="flex items-center gap-1.5">
+                <Volume2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                <strong>4. Converted Text ➔ Audio:</strong> Neural TTS synthesizes target voiceover.
+              </p>
+              <p className="flex items-center gap-1.5">
+                <Tv className="h-3.5 w-3.5 text-primary shrink-0" />
+                <strong>5. Audio ➔ Video Integration:</strong> Muxes dubbed track & dual subtitles.
               </p>
             </div>
             <div className="mt-auto flex flex-wrap gap-2">
@@ -589,7 +495,7 @@ export function MediaTranslateView() {
         </Card>
       </div>
 
-      {loading && <ProgressBlock message={STATUS_MESSAGES[statusIdx]} tick={tick} />}
+      {loading && <ProgressBlock message="Processing 5-Phase Pipeline" tick={tick} />}
 
       {error && !loading && (
         <Alert variant="destructive">
@@ -604,7 +510,159 @@ export function MediaTranslateView() {
         </Alert>
       )}
 
-      {result && !loading && <ResultsTabs result={result} target={target} />}
+      {/* Results Section */}
+      {result && !loading && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b pb-3">
+            <div className="flex items-center gap-2">
+              <Tv className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold tracking-tight">Integrated Video Player & 5-Phase Outputs</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <ModelBadge modelId={result.model} />
+              {result.durationSec && (
+                <Badge variant="outline" className="gap-1 text-xs">
+                  <Clock className="h-3 w-3" /> {formatDuration(result.durationSec)}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* YouTube-Style Multi-Track Video Player (Stage 5 Integration) */}
+          <TranslatedVideoPlayer
+            jobId={result.jobId}
+            sourceLang={source}
+            targetLang={target}
+            inputVideoName={result.inputVideoName}
+            dubbedVideoName={result.dubbedVideoName}
+            audioName={result.outputAudioPath ? basename(result.outputAudioPath) : undefined}
+            outputSrt={result.outputSrt}
+            outputVtt={result.outputVtt}
+            translatedSegments={result.segments || []}
+            sourceSegments={result.sourceSegments || []}
+            transcriptText={result.transcript}
+            translatedText={result.translatedText}
+            durationSec={result.durationSec}
+          />
+
+          {/* 5-Phase Pipeline Inspector */}
+          <Card>
+            <CardContent className="p-4 space-y-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <ListTree className="h-4 w-4 text-primary" /> 5-Phase Pipeline Output Inspection
+              </h3>
+
+              <Tabs defaultValue="phase2" className="w-full">
+                <TabsList className="grid grid-cols-4 w-full">
+                  <TabsTrigger value="phase2" className="text-xs">Phase 2: Source Text</TabsTrigger>
+                  <TabsTrigger value="phase3" className="text-xs">Phase 3: Translated Text</TabsTrigger>
+                  <TabsTrigger value="phase4" className="text-xs">Phase 4: Target Audio</TabsTrigger>
+                  <TabsTrigger value="phase5" className="text-xs">Phase 5: Subtitles & Cues</TabsTrigger>
+                </TabsList>
+
+                {/* Phase 2: Source Speech Recognition */}
+                <TabsContent value="phase2" className="space-y-3 pt-3">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Source language: <strong>{languageLabel(source)}</strong></span>
+                    <span>{result.sourceSegments?.length || 0} recognized speech segments</span>
+                  </div>
+                  <ScrollArea className="h-64 rounded-md border p-3 bg-muted/20">
+                    <div className="space-y-2">
+                      {result.sourceSegments && result.sourceSegments.length > 0 ? (
+                        result.sourceSegments.map((s, idx) => (
+                          <div key={idx} className="text-xs flex gap-2.5 items-start border-b border-border/40 pb-1.5 last:border-0">
+                            <Badge variant="outline" className="font-mono text-[10px] shrink-0">
+                              {formatTimestamp(s.start)} - {formatTimestamp(s.end)}
+                            </Badge>
+                            <span className="leading-relaxed">{s.text}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-muted-foreground">{result.transcript || "No transcript segments."}</p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                {/* Phase 3: Translated Text */}
+                <TabsContent value="phase3" className="space-y-3 pt-3">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Target language: <strong>{languageLabel(target)}</strong></span>
+                    <span>{result.segments?.length || 0} translated segments</span>
+                  </div>
+                  <ScrollArea className="h-64 rounded-md border p-3 bg-muted/20">
+                    <div className="space-y-2">
+                      {result.segments && result.segments.length > 0 ? (
+                        result.segments.map((s, idx) => (
+                          <div key={idx} className="text-xs flex gap-2.5 items-start border-b border-border/40 pb-1.5 last:border-0">
+                            <Badge variant="outline" className="font-mono text-[10px] shrink-0 text-primary border-primary/30">
+                              {formatTimestamp(s.start)} - {formatTimestamp(s.end)}
+                            </Badge>
+                            <span className="leading-relaxed font-medium">{s.text}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-muted-foreground">{result.translatedText || "No translated segments."}</p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                {/* Phase 4: Generated Voice Audio */}
+                <TabsContent value="phase4" className="space-y-3 pt-3">
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Time-aligned synthesized speech track for <strong>{languageLabel(target)}</strong>.
+                    </p>
+                    {result.outputAudioPath ? (
+                      <AudioPlayer src={`/api/download/${result.jobId}/${basename(result.outputAudioPath)}`} />
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Voice synthesis was disabled or not generated.</p>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Phase 5: Subtitles & Cues */}
+                <TabsContent value="phase5" className="space-y-3 pt-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold">Target Subtitles ({languageLabel(target)})</Label>
+                      <div className="flex gap-2">
+                        {result.outputSrt && (
+                          <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => downloadBlob(result.outputSrt!, `subtitles_${target}.srt`, "text/plain")}>
+                            <Download className="h-3.5 w-3.5" /> Download .SRT
+                          </Button>
+                        )}
+                        {result.outputVtt && (
+                          <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => downloadBlob(result.outputVtt!, `subtitles_${target}.vtt`, "text/vtt")}>
+                            <Download className="h-3.5 w-3.5" /> Download .VTT
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold">Source Subtitles ({languageLabel(source)})</Label>
+                      <div className="flex gap-2">
+                        {result.sourceSrt && (
+                          <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => downloadBlob(result.sourceSrt!, `subtitles_${source}.srt`, "text/plain")}>
+                            <Download className="h-3.5 w-3.5" /> Download .SRT
+                          </Button>
+                        )}
+                        {result.sourceVtt && (
+                          <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => downloadBlob(result.sourceVtt!, `subtitles_${source}.vtt`, "text/vtt")}>
+                            <Download className="h-3.5 w-3.5" /> Download .VTT
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

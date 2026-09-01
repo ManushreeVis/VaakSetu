@@ -61,13 +61,22 @@ export interface MediaTranslationResult {
   transcript: string;
   translatedText: string;
   segments: TranscriptionSegment[];
+  sourceSegments?: TranscriptionSegment[];
   outputAudioPath?: string;
   outputSrt?: string;
   outputVtt?: string;
+  sourceSrt?: string;
+  sourceVtt?: string;
+  inputVideoPath?: string;
+  inputVideoName?: string;
+  dubbedVideoPath?: string;
+  dubbedVideoName?: string;
+  hasVideo?: boolean;
   model: string;
   modelReason: string;
   durationSec?: number;
 }
+
 
 export interface ChatTurn {
   role: "user" | "assistant";

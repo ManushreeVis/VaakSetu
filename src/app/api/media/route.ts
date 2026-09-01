@@ -7,6 +7,8 @@ import type { ApiError } from "@/lib/domain/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 900; // 15 minutes for long video translations
+
 
 export async function POST(request: Request) {
   let form: FormData;
