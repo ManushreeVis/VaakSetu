@@ -96,6 +96,31 @@
           multilingualUi.setAttribute('font-weight', '800');
           multilingualUi.textContent = 'Multilingual UI';
           technicalSvg.appendChild(multilingualUi);
+          const technicalRoutes = [
+            ['M175 112 H212 V196 H250', '2.2s'],
+            ['M175 220 H250', '2s'],
+            ['M175 328 H212 V268 H250', '2.3s'],
+            ['M530 196 H560 V135 H598', '1.8s'],
+            ['M530 268 H560 V305 H598', '1.9s'],
+            ['M720.5 194 V246', '1.5s'],
+            ['M843 135 H880 V202 H920', '2s'],
+            ['M843 305 H880 V296 H920', '2.1s'],
+            ['M1220 202 H1275 V112 H1355', '2s'],
+            ['M1220 248 H1305 V220 H1355', '1.7s'],
+            ['M1220 296 H1275 V328 H1355', '2s'],
+          ];
+          technicalRoutes.forEach(([path, duration], index) => {
+            const packet = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            packet.setAttribute('r', '4');
+            packet.setAttribute('fill', index >= 8 ? '#168c70' : index === 5 || index === 7 ? '#d96b47' : '#2a9d8f');
+            packet.setAttribute('opacity', '.95');
+            const motion = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
+            motion.setAttribute('dur', duration);
+            motion.setAttribute('repeatCount', 'indefinite');
+            motion.setAttribute('path', path);
+            packet.appendChild(motion);
+            technicalSvg.appendChild(packet);
+          });
         }
         const previous = document.querySelector('#prev');
         const next = document.querySelector('#next');
