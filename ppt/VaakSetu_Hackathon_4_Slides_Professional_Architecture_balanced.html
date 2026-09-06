@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VaakSetu — Hackathon Presentation</title>
+<style>
+:root{
+ --bg:#07111c;--panel:#0c1c2b;--panel2:#10263a;--line:#2a5069;
+ --cyan:#65e8ff;--violet:#a58bff;--green:#69dfac;--text:#f3f8fc;--muted:#9db1c1;
+}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{font-family:Inter,Segoe UI,Arial,sans-serif;background:#040a11;color:var(--text)}
+.deck{width:100vw;height:100vh;position:relative}
+.slide{
+ position:absolute;inset:0;display:none;padding:32px 54px 52px;
+ background:
+ radial-gradient(circle at 88% 0%,rgba(73,157,202,.18),transparent 30%),
+ radial-gradient(circle at 0% 100%,rgba(122,78,197,.12),transparent 28%),
+ linear-gradient(135deg,#06101b,#081827 58%,#050b12);
+}
+.slide.active{display:block}
+.top{display:flex;justify-content:space-between;align-items:center}
+.brand{font-size:13px;font-weight:900;letter-spacing:.7px;display:flex;gap:9px;align-items:center}
+.logo{width:32px;height:32px;border-radius:9px;border:1px solid #3a6d88;display:grid;place-items:center;color:var(--cyan);background:#0b1d2c}
+.badge{font-size:9px;letter-spacing:1px;border:1px solid #2d536c;padding:7px 10px;border-radius:99px;color:#c8dae7;background:#091724}
+.hero{margin-top:28px}.kicker{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--cyan);font-weight:900;margin-bottom:7px}
+h1{font-size:48px;line-height:1.02;letter-spacing:-2.5px;margin:0 0 10px}
+h2{font-size:34px;line-height:1.05;letter-spacing:-1.5px;margin:0 0 8px}
+h3{font-size:14px;margin:0 0 6px}
+p{color:var(--muted);font-size:12px;line-height:1.45;margin:0}
+.grad{background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+.content{height:calc(100vh - 115px)}
+.card{background:rgba(10,28,44,.86);border:1px solid var(--line);border-radius:16px;padding:16px}
+.mini{font-size:10px;color:var(--muted);line-height:1.4}
+.chip{display:inline-block;border:1px solid #315a73;border-radius:99px;padding:5px 8px;font-size:9px;color:#d5e7f2;background:#091a29;margin:3px 3px 0 0}
+footer{position:absolute;bottom:15px;left:54px;right:54px;display:flex;justify-content:space-between;color:#71889a;font-size:9px}
+.nav{position:fixed;z-index:50;left:50%;bottom:8px;transform:translateX(-50%);display:flex;align-items:center;gap:8px}
+.nav button{width:36px;height:28px;border:1px solid #39647c;border-radius:9px;background:rgba(7,20,32,.98);color:#e5f2fa;cursor:pointer;font-size:17px}
+.nav button:hover{border-color:var(--cyan)}
+.dots{display:flex;gap:5px}.dot{width:7px!important;height:7px!important;padding:0;border-radius:50%!important;background:#173247!important}.dot.active{background:var(--cyan)!important}
+.counter{position:fixed;right:54px;bottom:16px;z-index:50;font-size:9px;color:#8ea6b7}
+
+/* animated architecture flow */
+.arch-flow{stroke-dasharray:9 7;animation:flowMove 1.15s linear infinite}
+.arch-flow.slow{animation-duration:1.8s}
+.arch-flow.fast{animation-duration:.8s}
+.flow-dot{fill:#fff;filter:url(#glow);opacity:.95}
+.flow-pulse{animation:pulseGlow 1.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes flowMove{to{stroke-dashoffset:-32}}
+@keyframes pulseGlow{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:1;transform:scale(1.35)}}
+@media (prefers-reduced-motion:reduce){.arch-flow,.flow-pulse{animation:none}}
+
+/* architecture */
+.arch{height:calc(100vh - 155px);margin-top:8px}
+.arch svg{width:100%;height:100%}
+.arch text{font-family:Inter,Segoe UI,Arial,sans-serif}
+.box{fill:#0c2033;stroke:#35647d;stroke-width:1.4}.boxA{fill:#102844;stroke:#5ee5ff;stroke-width:1.6}
+.boxM{fill:#151f3d;stroke:#9b83ff;stroke-width:1.5}.boxO{fill:#0c2929;stroke:#5adca6;stroke-width:1.5}
+.tt{fill:#f0f7fc;font-size:15px;font-weight:850}.dd{fill:#9fb4c4;font-size:10px}.sm{fill:#c8dae7;font-size:9px;font-weight:700}
+.line{fill:none;stroke:#62e4fb;stroke-width:2.2;marker-end:url(#a)}.lineV{fill:none;stroke:#9b83ff;stroke-width:2.2;marker-end:url(#b)}.lineG{fill:none;stroke:#61dca5;stroke-width:2;marker-end:url(#c)}
+
+/* results */
+.results{display:grid;grid-template-columns:1.18fr .82fr;gap:14px;margin-top:16px;height:calc(100% - 110px)}
+.big-results{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:11px 0}
+.result{padding:14px;border:1px solid #2a526b;border-radius:13px;background:#0a1d2e}
+.result .v{font-size:26px;font-weight:950;color:var(--cyan);line-height:1}.result .l{font-size:9px;font-weight:800;margin-top:6px}.result .s{font-size:8.5px;color:var(--muted);margin-top:3px;line-height:1.35}
+.testrow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #203e54}
+.testrow:last-child{border-bottom:0}.pass{color:var(--green);font-weight:900;font-size:10px}
+.note{border:1px dashed #557086;border-radius:11px;padding:10px;font-size:9px;color:#a9bccb;line-height:1.4;margin-top:10px}
+.bar{height:8px;border-radius:99px;background:#102a3d;overflow:hidden;margin-top:6px}.fill{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--violet));transition:width .6s}
+
+/* UX / USP */
+.usp-layout{display:grid;grid-template-columns:1.05fr .95fr;gap:14px;margin-top:16px;height:calc(100% - 110px)}
+.mode{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid #37627b;border-radius:15px;background:linear-gradient(100deg,#0b2132,#151c3c)}
+.switch{display:flex;gap:3px;padding:4px;background:#071521;border:1px solid #31556c;border-radius:99px}
+.switch button{border:0;background:transparent;color:#8fa7b8;padding:7px 12px;border-radius:99px;font-weight:800;font-size:9px;cursor:pointer}
+.switch button.active{background:#173a50;color:var(--cyan)}
+.modecopy{max-width:430px}.modecopy strong{font-size:13px}.modecopy p{font-size:9px;margin-top:4px}
+.journey{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+.j{padding:13px 10px;border-radius:13px;border:1px solid #28516b;background:#091a2a;min-height:120px}
+.jn{font-size:9px;color:var(--cyan);font-weight:900}.j b{display:block;font-size:10px;margin:7px 0 5px}.j span{font-size:8.5px;color:var(--muted);line-height:1.35}
+.points{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.point{padding:12px;border:1px solid #294e66;border-radius:12px;background:#091a2a}.point b{font-size:10px}.point span{display:block;color:var(--muted);font-size:8.5px;margin-top:4px;line-height:1.35}
+
+/* close */
+.closegrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.scorecard{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.sc{padding:13px;border:1px solid #294e66;border-radius:13px;background:#091a2a}.sc .v{font-size:22px;font-weight:950;color:var(--cyan)}.sc b{font-size:9px;display:block;margin-top:4px}.sc span{font-size:8px;color:var(--muted);line-height:1.35;display:block;margin-top:3px}
+.demo{display:flex;flex-direction:column;gap:10px}.demo .step{display:flex;gap:10px;align-items:center;padding:11px;border-radius:11px;background:#091a2a;border:1px solid #294e66}.demo .n{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#133a50;color:var(--cyan);font-size:10px;font-weight:900;flex:none}.demo b{font-size:10px}.demo span{display:block;color:var(--muted);font-size:8.5px;margin-top:2px}
+.quote{margin-top:13px;padding:15px;border-radius:13px;background:linear-gradient(100deg,rgba(16,49,68,.75),rgba(44,29,75,.65));border:1px solid #3b6077;font-size:16px;font-weight:850;line-height:1.25}
+</style>
+
+
+
+
+
+
+
+
+
+</head>
+<body>
+<div class="deck">
+
+<!-- 1 -->
+<section class="slide active">
+  <div class="top">
+    <div class="brand"><div class="logo">VS</div> VAAKSETU</div>
+    <div class="badge">HACKATHON · TEAM PRESENTATION</div>
+  </div>
+  <div style="height:calc(100vh - 95px);display:flex;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden">
+    <div style="position:absolute;width:620px;height:620px;border-radius:50%;border:1px solid rgba(101,232,255,.12);box-shadow:0 0 120px rgba(101,232,255,.08)"></div>
+    <div style="position:absolute;width:430px;height:430px;border-radius:50%;border:1px solid rgba(165,139,255,.15)"></div>
+    <div style="position:relative;max-width:1000px">
+      <div class="kicker" style="font-size:14px;letter-spacing:3px">TEAM VAAKSETU</div>
+      <h1 style="font-size:clamp(54px,7vw,96px);line-height:.98;margin:20px 0 24px">Breaking<br><span class="grad">Language Barriers</span></h1>
+      <p style="font-size:22px;line-height:1.55;max-width:800px;margin:0 auto;color:#b9c8d5">
+        <b style="color:#eef8fd">Offline multilingual translation</b> for
+        <b style="color:#eef8fd">text, audio & video</b> across
+        <b style="color:#eef8fd">Hindi · English · Marathi</b>.
+      </p>
+      <div style="display:flex;gap:14px;justify-content:center;margin-top:40px;flex-wrap:wrap">
+        <div class="pill">🔒 Privacy-first</div>
+        <div class="pill">⚡ Offline-first</div>
+        <div class="pill">🌐 Offline ↔ Online</div>
+      </div>
+      <div style="margin-top:34px;color:#718697;font-size:13px">A bridge of speech — built for bandwidth-constrained environments</div>
+      <div style="margin:24px auto 0;max-width:720px;padding:16px 22px;border:1px solid #2d536c;border-radius:16px;background:rgba(10,28,44,.72);text-align:left;box-shadow:0 10px 30px rgba(0,0,0,.18)">
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#65e8ff;font-weight:900;margin-bottom:10px;text-align:center">Team VaakSetu</div>
+        <div style="display:flex;justify-content:center;gap:10px 22px;flex-wrap:wrap;color:#d5e7f2;font-size:11px;line-height:1.5">
+          <span>Jaysukh Kalasariya</span>
+          <span>Manushree Vishwakarma</span>
+          <span>Jai Indala</span>
+          <span>Bibhanshu Jha</span>
+          <span>Arihant Jain</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer><span>VaakSetu · “Bridge of Speech”</span><span>01 / 04</span></footer>
+</section>
+<!-- 2 -->
+<section class="slide">
+  <div class="top">
+    <div class="brand"><div class="logo">VS</div> VAAKSETU</div>
+    <div class="badge">02 / 04 · TECHNICAL ARCHITECTURE</div>
+  </div>
+  <div class="hero" style="margin-top:10px">
+    <div class="kicker">End-to-end pipeline</div>
+    <h2>One application. <span class="grad">Multiple AI engines.</span></h2>
+    <p>Clear separation between input handling, media processing, speech extraction and translation.</p>
+  </div>
+
+  <div style="height:calc(100vh - 175px);margin-top:2px;padding:0 8px">
+    <svg viewBox="0 0 1600 600" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%">
+      <defs>
+        <marker id="b1" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0 0 L6 3 L0 6 Z" fill="#65e8ff"/>
+        </marker>
+        <marker id="b2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0 0 L6 3 L0 6 Z" fill="#a58bff"/>
+        </marker>
+        <marker id="b3" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0 0 L6 3 L0 6 Z" fill="#69dfac"/>
+        </marker>
+        <filter id="shadow"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity=".20"/></filter>
+      </defs>
+
+      <!-- Balanced 5-column grid -->
+      <text x="100" y="34" text-anchor="middle" fill="#65e8ff" font-size="11" font-weight="800" letter-spacing="1.8">USER INPUT</text>
+      <text x="390" y="34" text-anchor="middle" fill="#8fb4c8" font-size="11" font-weight="800" letter-spacing="1.8">APPLICATION</text>
+      <text x="720" y="34" text-anchor="middle" fill="#8fb4c8" font-size="11" font-weight="800" letter-spacing="1.8">AI PROCESSING</text>
+      <text x="1060" y="34" text-anchor="middle" fill="#a58bff" font-size="11" font-weight="800" letter-spacing="1.8">TRANSLATION</text>
+      <text x="1460" y="34" text-anchor="middle" fill="#69dfac" font-size="11" font-weight="800" letter-spacing="1.8">OUTPUT</text>
+
+      <!-- INPUT: 150 x 72 -->
+      <g>
+        <rect x="25" y="76" width="150" height="72" rx="14" fill="#0d2234" stroke="#65e8ff" stroke-width="1.6" filter="url(#shadow)"/>
+        <text x="100" y="106" text-anchor="middle" fill="#fff" font-size="16" font-weight="900">TEXT</text>
+        <text x="100" y="128" text-anchor="middle" fill="#9db1c1" font-size="9.5">documents / text</text>
+
+        <rect x="25" y="184" width="150" height="72" rx="14" fill="#0d2234" stroke="#65e8ff" stroke-width="1.6" filter="url(#shadow)"/>
+        <text x="100" y="214" text-anchor="middle" fill="#fff" font-size="16" font-weight="900">AUDIO</text>
+        <text x="100" y="236" text-anchor="middle" fill="#9db1c1" font-size="9.5">mp3 / wav / m4a</text>
+
+        <rect x="25" y="292" width="150" height="72" rx="14" fill="#0d2234" stroke="#65e8ff" stroke-width="1.6" filter="url(#shadow)"/>
+        <text x="100" y="322" text-anchor="middle" fill="#fff" font-size="16" font-weight="900">VIDEO</text>
+        <text x="100" y="344" text-anchor="middle" fill="#9db1c1" font-size="9.5">mp4 / mkv / mov</text>
+      </g>
+
+      <!-- APPLICATION: deliberately enlarged to visually match the other major sections -->
+      <rect x="250" y="76" width="280" height="288" rx="22" fill="#0d2033" stroke="#3f6982" stroke-width="1.8" filter="url(#shadow)"/>
+      <text x="390" y="114" text-anchor="middle" fill="#fff" font-size="21" font-weight="900">VaakSetu App</text>
+      <text x="390" y="137" text-anchor="middle" fill="#9db1c1" font-size="10">orchestration &amp; user controls</text>
+
+      <rect x="278" y="170" width="224" height="52" rx="11" fill="#102b42" stroke="#315a73"/>
+      <text x="390" y="202" text-anchor="middle" fill="#eef8fd" font-size="12" font-weight="800">Language + Input Router</text>
+
+      <rect x="278" y="242" width="224" height="52" rx="11" fill="#102b42" stroke="#315a73"/>
+      <text x="390" y="274" text-anchor="middle" fill="#eef8fd" font-size="12" font-weight="800">Offline / Online Switch</text>
+
+      <text x="390" y="332" text-anchor="middle" fill="#7e93a3" font-size="10">job history · storage · export</text>
+
+      <!-- AI PROCESSING: both 245 x 118 -->
+      <rect x="598" y="76" width="245" height="118" rx="20" fill="#0f2235" stroke="#4f7890" stroke-width="1.7" filter="url(#shadow)"/>
+      <text x="720.5" y="136" text-anchor="middle" fill="#fff" font-size="18" font-weight="900">Media Processing</text>
+
+      <rect x="598" y="246" width="245" height="118" rx="20" fill="#151f3d" stroke="#a58bff" stroke-width="1.9" filter="url(#shadow)"/>
+      <text x="720.5" y="280" text-anchor="middle" fill="#fff" font-size="18" font-weight="900">Whisper Large v3</text>
+      <text x="720.5" y="305" text-anchor="middle" fill="#c8baff" font-size="12" font-weight="800">Speech → Text</text>
+      <text x="720.5" y="328" text-anchor="middle" fill="#9db1c1" font-size="9.5">transcript + segments + timestamps</text>
+      <text x="720.5" y="347" text-anchor="middle" fill="#9db1c1" font-size="9.5">audio / video only</text>
+
+      <!-- TRANSLATION: 300 x 288 -->
+      <rect x="920" y="76" width="300" height="288" rx="22" fill="#111d34" stroke="#826cef" stroke-width="1.8" filter="url(#shadow)"/>
+      <text x="1070" y="112" text-anchor="middle" fill="#fff" font-size="19" font-weight="900">Translation Layer</text>
+      <text x="1070" y="134" text-anchor="middle" fill="#9db1c1" font-size="9.5">model chosen for the requested language pair</text>
+
+      <rect x="945" y="168" width="250" height="68" rx="13" fill="#182447" stroke="#9b83ff"/>
+      <text x="1070" y="197" text-anchor="middle" fill="#fff" font-size="16" font-weight="900">IndicTrans2</text>
+      <text x="1070" y="218" text-anchor="middle" fill="#b9aaff" font-size="9.5">Indic-focused translation</text>
+
+      <rect x="945" y="262" width="250" height="68" rx="13" fill="#182447" stroke="#9b83ff"/>
+      <text x="1070" y="291" text-anchor="middle" fill="#fff" font-size="16" font-weight="900">Facebook NLLB</text>
+      <text x="1070" y="312" text-anchor="middle" fill="#b9aaff" font-size="9.5">multilingual translation</text>
+
+      <!-- OUTPUT: 210 x 72 -->
+      <g>
+        <rect x="1355" y="76" width="210" height="72" rx="14" fill="#0c2929" stroke="#69dfac" stroke-width="1.7" filter="url(#shadow)"/>
+        <text x="1460" y="106" text-anchor="middle" fill="#fff" font-size="16" font-weight="900">TRANSLATED TEXT</text>
+        <text x="1460" y="128" text-anchor="middle" fill="#9db1c1" font-size="9.5">direct text output</text>
+
+        <rect x="1355" y="184" width="210" height="72" rx="14" fill="#0c2929" stroke="#69dfac" stroke-width="1.7" filter="url(#shadow)"/>
+        <text x="1460" y="214" text-anchor="middle" fill="#fff" font-size="16" font-weight="900">SUBTITLES</text>
+        <text x="1460" y="236" text-anchor="middle" fill="#9db1c1" font-size="9.5">SRT / VTT</text>
+
+        <rect x="1355" y="292" width="210" height="72" rx="14" fill="#0c2929" stroke="#69dfac" stroke-width="1.7" filter="url(#shadow)"/>
+        <text x="1460" y="322" text-anchor="middle" fill="#fff" font-size="16" font-weight="900">MEDIA OUTPUT</text>
+        <text x="1460" y="344" text-anchor="middle" fill="#9db1c1" font-size="9.5">translated workflow</text>
+      </g>
+
+      <!-- FLOW ROUTES: clear gutters and straight arrow entry -->
+      <path class="arch-flow fast" d="M175 112 H212 V196 H250" stroke="#65e8ff" stroke-width="2.3" fill="none" marker-end="url(#b1)"/>
+      <path class="arch-flow" d="M175 220 H250" stroke="#65e8ff" stroke-width="2.3" fill="none" marker-end="url(#b1)"/>
+      <path class="arch-flow slow" d="M175 328 H212 V268 H250" stroke="#65e8ff" stroke-width="2.3" fill="none" marker-end="url(#b1)"/>
+
+      <path class="arch-flow fast" d="M530 196 H560 V135 H598" stroke="#65e8ff" stroke-width="2.3" fill="none" marker-end="url(#b1)"/>
+      <path class="arch-flow" d="M530 268 H560 V305 H598" stroke="#65e8ff" stroke-width="2.3" fill="none" marker-end="url(#b1)"/>
+
+      <path class="arch-flow slow" d="M720.5 194 V246" stroke="#a58bff" stroke-width="2.3" fill="none" marker-end="url(#b2)"/>
+
+      <path class="arch-flow slow" d="M843 135 H880 V202 H920" stroke="#65e8ff" stroke-width="2.3" fill="none" marker-end="url(#b1)"/>
+      <path class="arch-flow fast" d="M843 305 H880 V296 H920" stroke="#a58bff" stroke-width="2.3" fill="none" marker-end="url(#b2)"/>
+
+      <path class="arch-flow" d="M1220 202 H1275 V112 H1355" stroke="#69dfac" stroke-width="2.3" fill="none" marker-end="url(#b3)"/>
+      <path class="arch-flow fast" d="M1220 248 H1305 V220 H1355" stroke="#69dfac" stroke-width="2.3" fill="none" marker-end="url(#b3)"/>
+      <path class="arch-flow slow" d="M1220 296 H1275 V328 H1355" stroke="#69dfac" stroke-width="2.3" fill="none" marker-end="url(#b3)"/>
+
+      <!-- Animated packets -->
+      <circle class="flow-dot flow-pulse" r="4"><animateMotion dur="2.2s" repeatCount="indefinite" path="M175 112 H212 V196 H250"/></circle>
+      <circle class="flow-dot flow-pulse" r="4"><animateMotion dur="2s" repeatCount="indefinite" path="M175 220 H250"/></circle>
+      <circle class="flow-dot flow-pulse" r="4"><animateMotion dur="2.3s" repeatCount="indefinite" path="M175 328 H212 V268 H250"/></circle>
+      <circle class="flow-dot flow-pulse" r="4"><animateMotion dur="1.8s" repeatCount="indefinite" path="M530 196 H560 V135 H598"/></circle>
+      <circle class="flow-dot flow-pulse" r="4"><animateMotion dur="1.9s" repeatCount="indefinite" path="M530 268 H560 V305 H598"/></circle>
+      <circle class="flow-dot flow-pulse" r="4"><animateMotion dur="1.5s" repeatCount="indefinite" path="M720.5 194 V246"/></circle>
+      <circle class="flow-dot flow-pulse" r="4"><animateMotion dur="2s" repeatCount="indefinite" path="M843 135 H880 V202 H920"/></circle>
+      <circle class="flow-dot flow-pulse" r="4"><animateMotion dur="2.1s" repeatCount="indefinite" path="M843 305 H880 V296 H920"/></circle>
+      <circle class="flow-dot flow-pulse" r="4"><animateMotion dur="2s" repeatCount="indefinite" path="M1220 202 H1275 V112 H1355"/></circle>
+      <circle class="flow-dot flow-pulse" r="4"><animateMotion dur="1.7s" repeatCount="indefinite" path="M1220 248 H1305 V220 H1355"/></circle>
+      <circle class="flow-dot flow-pulse" r="4"><animateMotion dur="2s" repeatCount="indefinite" path="M1220 296 H1275 V328 H1355"/></circle>
+
+      <text x="720" y="408" text-anchor="middle" fill="#718697" font-size="9.5">Audio / video: Media Processing → Whisper Large v3 → Translation</text>
+      <text x="1070" y="408" text-anchor="middle" fill="#718697" font-size="9.5">Text: Router → Translation</text>
+    </svg>
+  </div>
+  <footer><span>Frontend · Application · AI Engines · Storage</span><span>02 / 04</span></footer>
+</section>
+<!-- 3 -->
+<section class="slide">
+  <div class="top">
+    <div class="brand"><div class="logo">VS</div> VAAKSETU</div>
+    <div class="badge">03 / 04 · USP</div>
+  </div>
+  <div class="hero" style="margin-top:22px">
+    <div class="kicker">Why VaakSetu?</div>
+    <h2>Built for the places where <span class="grad">cloud-first tools fall short.</span></h2>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1.25fr .75fr;gap:28px;margin-top:35px;height:calc(100vh - 235px)">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-content:start">
+      <div class="card" style="padding:25px">
+        <div style="font-size:28px">✨</div><h3 style="margin-top:14px">Ease of Use</h3>
+        <p><b>Multilingual application UI</b> helps users read and use the application comfortably in their language.</p><p style="margin-top:8px"><b>Single-page application</b> keeps the complete workflow simple and easy to navigate.</p>
+      </div>
+      <div class="card" style="padding:25px">
+        <div style="font-size:28px">📡</div><h3 style="margin-top:14px">Works Without Internet</h3>
+        <p>Local AI models make translation possible in bandwidth-constrained and air-gapped environments.</p>
+      </div>
+      <div class="card" style="padding:25px">
+        <div style="font-size:28px">🎙️</div><h3 style="margin-top:14px">Multimodal</h3>
+        <p>One experience for <b>text, audio and video</b>, with subtitles and translated outputs.</p>
+      </div>
+      <div class="card" style="padding:25px">
+        <div style="font-size:28px">🔄</div><h3 style="margin-top:14px">Flexible Translation</h3>
+        <p>Supports translation across <b>Hindi, English and Marathi</b>, with both <b>IndicTrans2</b> and <b>Facebook NLLB</b> available in the translation layer.</p>
+      </div>
+    </div>
+
+    <div class="card" style="padding:30px;background:linear-gradient(145deg,rgba(16,38,55,.9),rgba(22,27,57,.9));border-color:rgba(105,223,172,.32);display:flex;flex-direction:column;justify-content:center">
+      <div class="kicker">KEY DIFFERENTIATOR</div>
+      <h2 style="font-size:32px;margin-top:12px">Offline ↔ Online</h2>
+      <p style="font-size:15px;line-height:1.7">The user is not locked into one mode.</p>
+      <div style="margin:24px 0">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="width:44px;height:44px;border-radius:12px;background:#0c2929;border:1px solid #69dfac;display:grid;place-items:center">⚡</div>
+          <div><b>OFFLINE</b><br><span style="color:#8fa2b2;font-size:12px">privacy + no internet dependency</span></div>
+        </div>
+        <div style="height:2px;background:linear-gradient(90deg,#69dfac,#a58bff);margin:0 22px 14px"></div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:44px;height:44px;border-radius:12px;background:#211b3d;border:1px solid #a58bff;display:grid;place-items:center">☁</div>
+          <div><b>ONLINE</b><br><span style="color:#8fa2b2;font-size:12px">optional fallback / potentially stronger results</span></div>
+        </div>
+      </div>
+      <div class="pill" style="align-self:flex-start;border-color:rgba(105,223,172,.35);color:#b8f4dc">USER CHOOSES THE MODE</div>
+    </div>
+  </div>
+  <footer><span>Offline-first · User-controlled · Multilingual</span><span>03 / 04</span></footer>
+</section>
+<!-- 4 -->
+<section class="slide">
+  <div class="top">
+    <div class="brand"><div class="logo">VS</div> VAAKSETU</div>
+    <div class="badge">04 / 04 · TESTING & RESULTS</div>
+  </div>
+  <div class="hero" style="margin-top:22px">
+    <div class="kicker">What we measured</div>
+    <h2>Testing the complete <span class="grad">translation journey</span></h2>
+    <p>Keep this slide grounded in your actual benchmark run — replace the highlighted values with your measured results.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1.05fr .95fr;gap:25px;margin-top:28px;height:calc(100vh - 225px)">
+    <div class="card" style="padding:28px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3>Performance benchmark</h3><span class="pill">5-MIN VIDEO</span>
+      </div>
+      <table style="width:100%;margin-top:22px;border-collapse:collapse;font-size:14px">
+        <tr style="color:#718697;text-align:left"><th style="padding:10px 0">Stage / Model</th><th>Time</th><th>Observation</th></tr>
+        <tr><td style="padding:14px 0;border-top:1px solid #203344"><b>FFmpeg</b> preprocessing</td><td style="border-top:1px solid #203344"><span class="metric">__</span></td><td style="border-top:1px solid #203344;color:#9db1c1">measured</td></tr>
+        <tr><td style="padding:14px 0;border-top:1px solid #203344"><b>Whisper Large v3</b></td><td style="border-top:1px solid #203344"><span class="metric">__</span></td><td style="border-top:1px solid #203344;color:#9db1c1">speech → text</td></tr>
+        <tr><td style="padding:14px 0;border-top:1px solid #203344"><b>IndicTrans2</b></td><td style="border-top:1px solid #203344"><span class="metric">__</span></td><td style="border-top:1px solid #203344;color:#9db1c1">translation</td></tr>
+        <tr><td style="padding:14px 0;border-top:1px solid #203344"><b>Facebook NLLB</b></td><td style="border-top:1px solid #203344"><span class="metric">__</span></td><td style="border-top:1px solid #203344;color:#9db1c1">translation</td></tr>
+        <tr><td style="padding:14px 0;border-top:1px solid #203344"><b>Total pipeline</b></td><td style="border-top:1px solid #203344"><span class="metric">__</span></td><td style="border-top:1px solid #203344;color:#9db1c1">end-to-end</td></tr>
+      </table>
+      <div style="margin-top:25px;padding:16px;border-radius:14px;background:#0b1b2b;border:1px dashed #315a73;color:#9db1c1;font-size:12px;line-height:1.6">
+        <b style="color:#eef8fd">Recommended demo:</b> run the same 5-minute sample through both translation models and capture stage-wise timing + total time.
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-rows:1fr 1fr;gap:18px">
+      <div class="card" style="padding:27px">
+        <div class="kicker">FUNCTIONAL TESTS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px">
+          <div class="pill" style="justify-content:flex-start">✓ Text translation</div>
+          <div class="pill" style="justify-content:flex-start">✓ Audio → text</div>
+          <div class="pill" style="justify-content:flex-start">✓ Video → subtitles</div>
+          <div class="pill" style="justify-content:flex-start">✓ HI ↔ EN ↔ MR</div>
+          <div class="pill" style="justify-content:flex-start">✓ Offline mode</div>
+          <div class="pill" style="justify-content:flex-start">✓ Online fallback</div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:27px;border-color:rgba(105,223,172,.3)">
+        <div class="kicker">RESULT SUMMARY</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:18px">
+          <div><div class="metric">__</div><div class="small">success rate</div></div>
+          <div><div class="metric">__</div><div class="small">avg. end-to-end time</div></div>
+          <div><div class="metric">__</div><div class="small">test cases passed</div></div>
+          <div><div class="metric">__</div><div class="small">languages validated</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer><span>Testing results should reflect the team's measured run</span><span>04 / 04</span></footer>
+</section>
+
+<style>
+/* VAAKSETU CLICKABLE SLIDE NAVIGATION */
+#VS_NAV{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  height:82px;
+  z-index:2147483647;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:28px;
+  background:rgba(4,12,20,.98);
+  border-top:2px solid #2d5a70;
+  box-shadow:0 -8px 30px rgba(0,0,0,.55);
+  font-family:Arial,sans-serif;
+}
+#VS_NAV button{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:180px !important;
+  height:52px !important;
+  border:2px solid #65e8ff !important;
+  border-radius:12px !important;
+  background:#123247 !important;
+  color:#fff !important;
+  font-size:16px !important;
+  font-weight:900 !important;
+  cursor:pointer !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
+}
+#VS_NAV button:hover{background:#1b506a !important}
+#VS_NAV .count{
+  min-width:110px;
+  text-align:center;
+  color:#fff;
+  font-size:15px;
+  font-weight:900;
+}
+</style>
+
+<div id="VS_NAV">
+  <button id="VS_PREV" type="button">← PREVIOUS</button>
+  <div class="count" id="VS_COUNT">SLIDE 1 / 4</div>
+  <button id="VS_NEXT" type="button">NEXT →</button>
+</div>
+
+<script>
+(function(){
+  function start(){
+    var slides = Array.prototype.slice.call(document.querySelectorAll("section.slide"));
+    var prev = document.getElementById("VS_PREV");
+    var next = document.getElementById("VS_NEXT");
+    var count = document.getElementById("VS_COUNT");
+    if (!slides.length || !prev || !next) return;
+
+    var current = 0;
+    for(var i=0;i<slides.length;i++){
+      if(slides[i].classList.contains("active")) { current=i; break; }
+    }
+
+    function show(n){
+      current = Math.max(0, Math.min(slides.length-1,n));
+      for(var j=0;j<slides.length;j++){
+        slides[j].classList.toggle("active",j===current);
+        slides[j].style.display = j===current ? "block" : "none";
+      }
+      count.textContent = "SLIDE " + (current+1) + " / " + slides.length;
+      prev.disabled = current===0;
+      next.disabled = current===slides.length-1;
+      prev.style.opacity = current===0 ? ".45" : "1";
+      next.style.opacity = current===slides.length-1 ? ".45" : "1";
+    }
+
+    prev.onclick=function(){ show(current-1); };
+    next.onclick=function(){ show(current+1); };
+
+    document.addEventListener("keydown",function(e){
+      if(e.key==="ArrowLeft"){e.preventDefault();show(current-1);}
+      if(e.key==="ArrowRight"){e.preventDefault();show(current+1);}
+    });
+
+    show(current);
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",start);
+  }else{
+    start();
+  }
+})();
+</script>
+
+</body>
+</html>
